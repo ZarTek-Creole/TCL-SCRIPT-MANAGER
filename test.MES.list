@@ -1,0 +1,31 @@
+{
+  "list": {
+    "updateat": "Mon 11 Jan 2021 10:15:39 AM CET",
+    "name": "ZarTek test List",
+    "contact": "darkshelldev@gmail.com"
+  },
+  "modules": [
+    {
+      "name": "MalaGaM/mceggdrop",
+      "section": "FiSH",
+      "description": "Mircryption (FiSH) for eggdrop.",
+      "version": "1.00.30",
+      "author": "WtF",
+      "documentation": "https://github.com/MalaGaM/mceggdrop/blob/master/ImportantReadme.txt",
+      "source": "https://github.com/MalaGaM/mceggdrop",
+      "troubleshooting": "In case of problems, contact http://www.donationcoder.com/Software/Mouser/mircryption/others_eggdrop.php",
+      "mineggdropversion": "1.8.4",
+      "mintclversion": "8.5",
+      "postinstalltext": [
+        "1) Copy these files to your eggdrop/scripts/ directory.",
+        "2) Add lines to your eggdrop .conf file, in the ##### SCRIPTS ##### section,",
+        "    below the lines to include alltools.tcl and action.fix.tcl:",
+        "      # mircryption eggdrop",
+        "      source scripts/tcleggdrop_mcpsfuncs.tcl",
+        "3) Edit the tcleggdrop_mcps_sitesettings.ini file and modify it for your",
+        "    channels and preferences.",
+        "3) Restart your eggdrop."
+      ]
+    }
+  ]
+}
