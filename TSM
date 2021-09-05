@@ -1,0 +1,25 @@
+#!/bin/bash
+###############################################################################################
+#
+#	Name		:
+#		TSM (TCL-SCRIPT-MANAGER)
+#
+#	Description	:
+#		TSM (TCL-SCRIPT-MANAGER) is a TCL script manager that allows you to easily install, update and uninstall TCL scripts.
+#
+#		TSM (TCL-SCRIPT-MANAGER) est un gestionnaire de scripts TCL qui vous permet d'installer, de mettre à jour et de désinstaller facilement des scripts TCL.
+#
+#	Donation	:
+#		https://github.com/MalaGaM/DONATE
+#
+#	Website		:
+#		https://github.com/MalaGaM/TCL-SCRIPT-MANAGER
+#
+#	Support		:
+#		https://github.com/MalaGaM/TCL-SCRIPT-MANAGER/issues
+#
+#	Docs		:
+#		https://github.com/MalaGaM/TCL-SCRIPT-MANAGER/wiki
+#
+###############################################################################################
+
