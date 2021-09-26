@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env tclsh
 ###############################################################################################
 #
 #	Name		:
@@ -22,4 +22,70 @@
 #		https://github.com/MalaGaM/TCL-SCRIPT-MANAGER/wiki
 #
 ###############################################################################################
+set Config(FileName)    "TSM.cfg"
+proc Show:Banner {} {
+    puts "  _____ ___ __  __ \n |_   _/ __|  \\/  |\n   | | \\__ \\ |\\/| |\n   |_| |___/_|  |_|\n-TCL-SCRIPT-MANAGER-"
+}
+proc Show:Help {} {
+    puts "This script expects a parameter. Use:"
+    puts "$::argv0 update         Update source list"
+}
+proc Locate:Config:FileName {} {
+    variable Config
+    # Chargement unique (non en cascade)
+    # Find Config file in current directory
+    if { [file exists "[pwd]/${Config(FileName)}"] } {
+        return "[pwd]/${Config(FileName)}"
+    # Find Config file in home directory
+    } elseif { [file exists "[glob ~]/TSM.cfg"] } {
+        return "[glob ~]/TSM.cfg"
+    # Find Config file in /etc directory
+    } elseif { [file exists "/etc/tsm/${Config(FileName)}"] } {
+        return "/etc/tsm/${Config(FileName)}"
+    # Find Config file in /usr/etc/ directory
+    } elseif { [file exists "/usr/etc/${Config(FileName)}"] } {
+        return "/usr/etc/${Config(FileName)}"
+    } else {
+        return -code error "Config file '${Config(FileName)}' not found. Rename 'TSM.example.cfg' to 'TSM.cfg' and edit it!"
+    }
+}
+proc main { } {
+    TSM:Init
+    Show:Banner
+    if { $::argc == 0 } {
+        Show:Help
+        return
+    }
+    Config:Load
+}
+proc TSM:Init {} {
+    PKG:Load json 1.3
+}
+proc PKG:Load { PKG_NAME {PKG_VERS ""} } {
+    if { $PKG_VERS == "" && [catch { package require ${PKG_NAME} } ERR] } { 
+        Show:Error "ERROR: $::argv0 need package ${PKG_NAME} (${ERR})" 2
+    } elseif { $PKG_VERS != "" && [catch { package require ${PKG_NAME} ${PKG_VERS} } ERR] } { 
+        Show:Error "ERROR: $::argv0 need package ${PKG_NAME} ${PKG_VERS} (${ERR})" 2
+    }
 
+}
+proc Show:Error { ERR_MSG {exit 0} } {
+    puts "ERROR: ${ERR_MSG}"
+    if { $ERR_MSG != 0 } { exit $exit }
+}
+proc File:Check:Perms { FileName } {
+    if { ![file isfile ${FileName}] } { Show:Error "'${FileName}' is not an file." 2; } 
+    if { ![file readable  ${FileName}] } { Show:Error "'${FileName}' is not readable file. check perms" 2; } 
+    return 1
+}
+proc Config:Load {} {
+    if { [ catch {
+        set Config(FilePath) [Locate:Config:FileName]
+    } ERROR_MSG ] } {
+        puts " ERROR: ${ERROR_MSG}"
+        return 
+    }
+    File:Check:Perms ${Config(FilePath)}
+    puts "${Config(FilePath)}"
+}
+main
