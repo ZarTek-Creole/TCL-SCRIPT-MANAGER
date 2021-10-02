@@ -22,70 +22,301 @@
 #		https://github.com/MalaGaM/TCL-SCRIPT-MANAGER/wiki
 #
 ###############################################################################################
-set Config(FileName)    "TSM.cfg"
-proc Show:Banner {} {
-    puts "  _____ ___ __  __ \n |_   _/ __|  \\/  |\n   | | \\__ \\ |\\/| |\n   |_| |___/_|  |_|\n-TCL-SCRIPT-MANAGER-"
-}
-proc Show:Help {} {
-    puts "This script expects a parameter. Use:"
-    puts "$::argv0 update         Update source list"
-}
-proc Locate:Config:FileName {} {
-    variable Config
-    # Chargement unique (non en cascade)
-    # Find Config file in current directory
-    if { [file exists "[pwd]/${Config(FileName)}"] } {
-        return "[pwd]/${Config(FileName)}"
-    # Find Config file in home directory
-    } elseif { [file exists "[glob ~]/TSM.cfg"] } {
-        return "[glob ~]/TSM.cfg"
-    # Find Config file in /etc directory
-    } elseif { [file exists "/etc/tsm/${Config(FileName)}"] } {
-        return "/etc/tsm/${Config(FileName)}"
-    # Find Config file in /usr/etc/ directory
-    } elseif { [file exists "/usr/etc/${Config(FileName)}"] } {
-        return "/usr/etc/${Config(FileName)}"
-    } else {
-        return -code error "Config file '${Config(FileName)}' not found. Rename 'TSM.example.cfg' to 'TSM.cfg' and edit it!"
+namespace eval TSM {
+    variable SCRIPTS
+    array set SCRIPTS {
+        NAME    "TSM"
+        LNAME   "TCL-SCRIPT-MANAGER"
+        VERSION "0.0.1"
     }
-}
-proc main { } {
-    TSM:Init
-    Show:Banner
-    if { $::argc == 0 } {
-        Show:Help
-        return
+    variable ::TSM::CONFIG
+    array set CONFIG {
+        FILENAME    "TSM.cfg"
+        
     }
-    Config:Load
-}
-proc TSM:Init {} {
-    PKG:Load json 1.3
-}
-proc PKG:Load { PKG_NAME {PKG_VERS ""} } {
-    if { $PKG_VERS == "" && [catch { package require ${PKG_NAME} } ERR] } { 
-        Show:Error "ERROR: $::argv0 need package ${PKG_NAME} (${ERR})" 2
-    } elseif { $PKG_VERS != "" && [catch { package require ${PKG_NAME} ${PKG_VERS} } ERR] } { 
-        Show:Error "ERROR: $::argv0 need package ${PKG_NAME} ${PKG_VERS} (${ERR})" 2
+    set CONFIG(PathList)    [list           \
+                                [pwd]       \
+                                [glob ~]    \
+                                "/etc/tsm"  \
+                                "/usr/etc"  \
+                            ];
+    variable ::TSM::SOURCE
+    set SOURCE(PathList)    [list               \
+                                [pwd]           \
+                                [glob ~]        \
+                                "/etc/tsm"      \
+                                "/usr/etc/tsm" 
+                            ];
+    namespace eval Show {
+        proc Banner {} {
+            puts "  _____ ___ __  __ \n |_   _/ __|  \\/  |\n   | | \\__ \\ |\\/| |\n   |_| |___/_|  |_|\n-TCL-SCRIPT-MANAGER-"
+        }
+        proc Help {} {
+            puts "This script expects a parameter. Use:"
+            puts "${::argv0} update         Update source list"
+        }
+        proc Error { ERR_MSG {exit 0} } {
+            puts "ERROR: ${ERR_MSG}"
+            if { ${ERR_MSG} != 0 } { exit ${exit} }
+            
+        }
+    }
+    proc ::TSM::Locate:Config:FILENAME {} {
+        variable ::TSM::CONFIG
+        # Chargement unique (non en cascade)
+        foreach CONFIG_PATH ${CONFIG(PathList)} {
+            if { [file exists "${CONFIG_PATH}/${CONFIG(FILENAME)}"] } { return "${CONFIG_PATH}/${CONFIG(FILENAME)}" }
+        }
+        return -code error "Config file '${CONFIG(FILENAME)}' not found. Rename 'TSM.example.cfg' to '${CONFIG(FILENAME)}' and edit it!"
+    }
+    namespace eval Source {
+        proc Update {} {
+            ::TSM::Source::Get:FILENAME:Path
+            ::TSM::Source::List:Read
+        }
+        proc Get:FILENAME:Path {} {
+            variable ::TSM::SOURCE
+            variable ::TSM::CONFIG
+            # Chargement en cascade
+            set SOURCE_LIST [list]
+            foreach SOURCE_PATH ${SOURCE(PathList)} {
+                set SOURCE_PATH [file normalize $SOURCE_PATH]
+                if { [file exists "${SOURCE_PATH}/sources.list"] && [::TSM::File::Check:Perms "${SOURCE_PATH}/sources.list"] } {
+                    lappend SOURCE_LIST "${SOURCE_PATH}/sources.list"
+                }
+
+                if { [file isdirectory "${SOURCE_PATH}/sources.list.d"] } {
+                    foreach SOURCE_PATH_DIR "${SOURCE_PATH}/sources.list.d" { 
+                        foreach SOURCE_PATH_LIST [glob -nocomplain -directory ${SOURCE_PATH_DIR} *.list] { 
+                            if { [file exists ${SOURCE_PATH_LIST}] } { lappend SOURCE_LIST ${SOURCE_PATH_LIST} }
+                        }
+                    }
+                }
+            }
+            foreach SOURCE_FILE [dict get ${CONFIG(DATA)} sources] {
+                if { [string match http* $SOURCE_FILE] } {
+                    lappend SOURCE_LIST ${SOURCE_FILE}
+                } else {
+                    lappend SOURCE_LIST [file normalize ${SOURCE_FILE}]
+                }
+
+            }
+            set SOURCE(LIST) [lsort -unique ${SOURCE_LIST}]
+        }
+        proc List:Validator { SOURCE_LIST_DATA SOURCE_URI } {
+            if { ![dict exists ${SOURCE_LIST_DATA} list] } { 
+                ::TSM::Show::Error "Bad Source List file : No 'list' information in ${SOURCE_URI}" 0
+                return 0
+            }
+            if { ![dict exists ${SOURCE_LIST_DATA} scripts] } { 
+                ::TSM::Show::Error "Bad Source List file : No 'scripts' information in ${SOURCE_URI}" 0
+                return 0
+            }
+            return 1
+        }
+        proc List:Read {} {
+            variable ::TSM::SOURCE
+            set LIST [dict create]
+            foreach SOURCE_URI ${SOURCE(LIST)} {
+                puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
+                if { [string match http* ${SOURCE_URI}] } {
+                    set SOURCE_FILE_DATA [::TSM::URL:Read:json2dict ${SOURCE_URI}]
+                    if { ! [::TSM::Source::List:Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
+                } elseif { [::TSM::File::Check:Perms ${SOURCE_URI}] } {
+                    set SOURCE_FILE_DATA    [::TSM::File::Read:json2dict ${SOURCE_URI}]
+                    if { ! [::TSM::Source::List:Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
+                } else {
+                    ::TSM::Show::Error "::TSM::Source::List:Read ERROR: The file '${SOURCE_URI}' can't read!" 0
+                    continue
+                }
+            }
+        }
     }
 
-}
-proc Show:Error { ERR_MSG {exit 0} } {
-    puts "ERROR: ${ERR_MSG}"
-    if { $ERR_MSG != 0 } { exit $exit }
-}
-proc File:Check:Perms { FileName } {
-    if { ![file isfile ${FileName}] } { Show:Error "'${FileName}' is not an file." 2; } 
-    if { ![file readable  ${FileName}] } { Show:Error "'${FileName}' is not readable file. check perms" 2; } 
-    return 1
-}
-proc Config:Load {} {
-    if { [ catch {
-        set Config(FilePath) [Locate:Config:FileName]
-    } ERROR_MSG ] } {
-        puts " ERROR: ${ERROR_MSG}"
-        return 
+    namespace eval JSon {
+        proc Valid { FILENAME JSON_DATA } {
+            if { ![::json::validate ${JSON_DATA}] || [llength $JSON_DATA] == 0} {
+                return -code error "::TSM::JSon::Valid ERROR: The file '${FILENAME}' is not an JSON FILE!"
+            }
+            if { [catch { ::json::json2dict ${JSON_DATA} } ERR_MSG] } {
+			    return -code error "::TSM::JSon::Valid ERROR: The file '${FILENAME}' is not an correct format JSON FILE! (JSON ERROR FORMAT)"
+		    }
+            return 1
+        }
     }
-    File:Check:Perms ${Config(FilePath)}
-    puts "${Config(FilePath)}"
+    namespace eval File {
+        proc Read:json2dict { FILENAME } {
+            set FILE_DATA   [::TSM::File::Read:Data ${FILENAME}]
+            if { [catch {
+                            ::TSM::JSon::Valid ${FILENAME} ${FILE_DATA}
+            } ERROR_MSG] } { 
+                puts ${ERROR_MSG}; exit 1 
+            }
+            return [::json::json2dict ${FILE_DATA}];
+        }
+        proc Read:Data { FILENAME } {
+            set FILE_PIPE [open ${FILENAME} r]
+            set FILE_DATA [read ${FILE_PIPE}]
+            close ${FILE_PIPE}
+            return ${FILE_DATA}
+        }
+        proc Check:Perms { FILENAME {exit 0} } {
+            if { ![file isfile ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not an file." ${exit}; } 
+            if { ![file readable  ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not readable file. check perms" ${exit}; } 
+            
+            return 1
+        }
+    }
+    # https://boulets.eggdrop.fr/tcl/routines/tcl-toolbox-0033.html
+    namespace eval DBSource {
+        ###############################################################################
+        ### Crée une entrée dans la base de données.
+        ###############################################################################
+        proc create_entry {args} {
+            variable DBSource
+            if { ![::tcl::info::exists DBSource] } { variable DBSource {} }
+            ::tcl::dict::set DBSource {*}${args}
+        }
+
+        ###############################################################################
+        ### Supprime une catégorie et ses sous-catégories dans la base de données.
+        ###############################################################################
+        proc delete_entry {args} {
+            variable DBSource
+            if { ![::tcl::info::exists DBSource] } {
+                return -code error "base de données vide"
+            } elseif { ![::tcl::dict::exists $DBSource {*}${args}] } {
+                return -code error "entrée inexistante"
+            } else {
+                if { [catch { ::tcl::dict::unset DBSource {*}${args} }] } {
+                    return -code error "entrée inexistante"
+                }
+            }
+        }
+        ###############################################################################
+        ### Affiche les entrées que contiennent une catégorie dans la base de données.
+        ###############################################################################
+        proc get_entries {args} {
+            variable DBSource
+            if { ![::tcl::info::exists DBSource] } {
+                return -code error  "base de données vide"
+            } else {
+                if { [catch { ::tcl::dict::keys [::tcl::dict::get $DBSource {*}${args}] } result ] } {
+                    return -code error "catégorie inexistante"
+                } else {
+                    return $result
+                }
+            }
+        }
+        ###############################################################################
+        ### Affiche la valeur d'une entrée dans la base de données.
+        ###############################################################################
+        proc get_data {args} {
+            variable DBSource
+            if { ![::tcl::info::exists DBSource] } {
+                return -code error "base de données vide"
+            } else {
+                if { [catch { ::tcl::dict::get $DBSource {*}${args} } result] } {
+                    return -code error "catégorie inexistante"
+                } else {
+                    return $result
+                }
+            }
+        }
+        ###############################################################################
+        ### Incrémente une entrée numérique dans la base de données.
+        ### L'incrément peut être une valeur négative et/ou décimale.
+        ###############################################################################
+        proc incr_value {args} {
+            if { ![::tcl::string::is double [set increment [lindex ${args} end]]] } {
+                return -code error "l'incrément doit être numérique"
+            } else {
+                set args [lreplace ${args} end end]
+                variable DBSource
+                if { ![::tcl::info::exists DBSource] } {
+                    return -code error "base de données vide"
+                } else {
+                    if { ![::tcl::dict::exists $DBSource {*}${args}] } {
+                        return -code error "entrée inexistante"
+                    } elseif { ![::tcl::string::is double [::tcl::dict::get $DBSource {*}${args}]] } {
+                        return -code error "la valeur de cette entrée n'est pas numérique"
+                    } elseif { [catch { ::tcl::dict::set DBSource {*}${args} [expr {[::tcl::dict::get $DBSource {*}${args}] + $increment}] } result] } {
+                        return -code error "catégorie inexistante"
+                    } else {
+                        return $result
+                    }
+                }
+            }
+        }
+    }   
+    ###
+    namespace eval Config {
+        proc Check {} {
+            variable ::TSM::CONFIG
+            variable ::TSM::SOURCE
+            #puts [dict get ${CONFIG(DATA)}]
+            if { ![dict exists ${CONFIG(DATA)} sources] } { 
+                ::TSM::Show::Error "No sources list in '${CONFIG(FILENAME)}' file." 2;
+            }
+            
+        }
+        proc Load {} {
+            variable ::TSM::CONFIG
+            if { [ catch {
+                set CONFIG(FilePath) [::TSM::Locate:Config:FILENAME]
+            } ERROR_MSG ] } {
+                puts "ERROR: ${ERROR_MSG}"
+                return 
+            }
+            puts [format "Reading Config file from '%s'..." ${CONFIG(FilePath)}]
+            ::TSM::File::Check:Perms ${CONFIG(FilePath)}
+            set CONFIG(DATA) [::TSM::File::Read:json2dict ${CONFIG(FilePath)}]
+        }
+    }
+    proc ::TSM::URL:Read:json2dict { URL } {
+        if { [string match https* $URL] } { ::http::register https 443 [list ::tls::socket -tls1 1 -autoservername 1] }
+        if { [catch {set URL_TOKEN [::http::geturl ${URL} -binary 1]} ERR_MSG] } {
+			return -code error "::TSM::URL:Read:json2dict ERROR: ${ERR_MSG} for '${URL}'."
+		}
+        set URL_DATA    [::http::data ${URL_TOKEN}];
+        ::http::cleanup ${URL_TOKEN}
+        if { [string match https* $URL] } { ::http::unregister https }
+        if { [catch { 
+                        ::TSM::JSon::Valid ${URL} ${URL_DATA}
+        } ERROR_MSG] } {
+            puts ${ERROR_MSG}; exit 1 
+        }
+        
+        return ${URL_DATA}
+    }
+    proc PKG:Load { PKG_NAME {PKG_VERS ""} } {
+        if { ${PKG_VERS} == "" && [catch { package require ${PKG_NAME} } ERR] } { 
+            ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} (${ERR})" 2
+        } elseif { ${PKG_VERS} != "" && [catch { package require ${PKG_NAME} ${PKG_VERS} } ERR] } { 
+            ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} ${PKG_VERS} (${ERR})" 2
+        }
+    }
+    proc main { } {
+        variable ::TSM::SOURCE
+        ::TSM::Init
+        ::TSM::Show::Banner
+        ::TSM::Config::Load
+        ::TSM::Config::Check
+        set COMMANDS [lindex ${::argv} 0]
+        switch -nocase ${COMMANDS} {
+            update  {
+                ::TSM::Source::Update
+            }
+            default {
+                ::TSM::Show::Help
+            }
+        }
+    }
+    proc Init {} {
+        PKG:Load json 1.3
+        PKG:Load http
+        PKG:Load tls
+    }
 }
-main
+
+::TSM::main

@@ -4,7 +4,7 @@
     "name": "ZarTek test List",
     "contact": "darkshelldev@gmail.com"
   },
-  "modules": [
+  "scripts": [
     {
       "name": "MalaGaM/mceggdrop",
       "section": "FiSH",
