@@ -23,6 +23,7 @@
 #
 ###############################################################################################
 namespace eval ::TSM {
+    variable ::TSM::DBSource [dict create]
     variable SCRIPTS
     array set SCRIPTS {
         NAME    "TSM"
@@ -54,19 +55,21 @@ proc ::TSM::Show::Banner {} {
 }
 proc ::TSM::Show::Help {} {
     puts "This script expects a parameter. Use:"
-    puts "${::argv0} update         Update source list"
+    puts "${::argv0} UpdateDB           - update database list of available scripts"
+    puts "${::argv0} List               - list scripts based on package names"
+    #puts "${::argv0} Search            - search in scripts descriptions"
+    puts "${::argv0} Show <num>         - show script details"
+    #puts "${::argv0} Install <num>     - install script"
+    puts "${::argv0} GenDateNow         - Generator date now with format '%a, %d %b %Y %H:%M:%S %Z'"
+    puts "${::argv0} help <parameter>   - Show help for <parameter>"
 }
 proc ::TSM::Show::Error { ERR_MSG {exit 0} } {
     puts "ERROR: ${ERR_MSG}"
-    if { ${ERR_MSG} != 0 } { exit ${exit} }
-    
+    if { ${exit} != 0 } { exit ${exit} }
+ 
 }
 
 namespace eval ::TSM::Source {}
-proc ::TSM::Source::Update {} {
-    ::TSM::Source::Get:FILENAME:Path
-    ::TSM::List::Read
-}
 proc ::TSM::Source::Get:FILENAME:Path {} {
     variable ::TSM::SOURCE
     variable ::TSM::CONFIG
@@ -108,39 +111,101 @@ proc ::TSM::List::Validator { SOURCE_LIST_DATA SOURCE_URI } {
 }
 proc ::TSM::List::Read {} {
     variable ::TSM::SOURCE
-    set LIST [dict create]
+    set SOURCE(SCRIPT_NUMBER)   0
+    set SOURCE(LIST_NUMBER)     0
     foreach SOURCE_URI ${SOURCE(LIST)} {
         puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
         if { [string match http* ${SOURCE_URI}] } {
             set SOURCE_FILE_DATA [::TSM::URL::Read:json2dict ${SOURCE_URI}]
-            if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
-            ::TSM::List::Get:Informations $SOURCE_FILE_DATA
+            if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ![::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
+            incr SOURCE(LIST_NUMBER)
         } elseif { [::TSM::File::Check:Perms ${SOURCE_URI}] } {
             set SOURCE_FILE_DATA    [::TSM::File::Read:json2dict ${SOURCE_URI}]
-            if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
-            ::TSM::List::Get:Informations $SOURCE_FILE_DATA
+            if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ! [::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
+            
+            incr SOURCE(LIST_NUMBER)
         } else {
             ::TSM::Show::Error "::TSM::List::Read ERROR: The file '${SOURCE_URI}' can't read!" 0
             continue
         }
     }
+    puts "Total lists '${SOURCE(LIST_NUMBER)}' withs scripts: '${SOURCE(SCRIPT_NUMBER)}'"
+    ::TSM::DBSource::save ${::TSM::SCRIPTS(NAME)}.db
+
 }
-proc ::TSM::List::Get:Informations { LIST_DATA } {
+proc ::TSM::List::Get:Informations { LIST_DATA SOURCE_URI } {
+    variable ::TSM::SOURCE
+    variable ::TSM::DBSource
     set LIST_NAME       ""
     set LIST_CONTACT    ""
     set LIST_DATE       ""
     set SCRIPTS_CNT     0
+    if { [dict exists ${LIST_DATA} scripts] && [dict get ${LIST_DATA} scripts] == "" } { ::TSM::Show::Error "::TSM::List::Get:Informations ERROR: No scripts informations found in ${SOURCE_URI}. skipped!"; return 0 }
     if { [dict exists ${LIST_DATA} list] } { 
         set list    [dict get ${LIST_DATA} list]
-        if { [dict exists ${list} name] }       { set LIST_NAME [dict get ${list} name] }
+        if { [dict exists ${list} name] }       { 
+            set LIST_NAME [dict get ${list} name] 
+            if { [::TSM::DBSource::exists ${LIST_NAME}] } {
+                ::TSM::Show::Error "::TSM::List::Get:Informations ERROR: Duplicata source '${SOURCE_URI}' with '[::TSM::DBSource::get_data ${LIST_NAME} source]', skipped!"; return 0
+            }
+        }
         if { [dict exists ${list} contact] }    { set LIST_CONTACT [dict get ${list} contact] }
         if { [dict exists ${list} updateat] }   { set LIST_DATE [dict get ${list} updateat] }
-    }
+        
+            dict set DBSource ${LIST_NAME} updateat ${LIST_DATE}
+            dict set DBSource ${LIST_NAME} contact ${LIST_CONTACT}
+            dict set DBSource ${LIST_NAME} source ${SOURCE_URI}
+    } else { ::TSM::Show::Error "::TSM::List::Get:Informations ERROR: No List informations found in ${SOURCE_URI}"; return 0 }
     if { [dict exists ${LIST_DATA} scripts] } { 
-        set scripts     [dict get ${LIST_DATA} scripts]
-        foreach number $scripts { incr SCRIPTS_CNT }
+        set SCRIPTS_LIST            [dict get ${LIST_DATA} scripts]
+        foreach SCRIPT_DATA ${SCRIPTS_LIST} { 
+            set SCRIPT_NAME             ""
+            set SCRIPT_SECTION          ""
+            set SCRIPT_DESCRIPTION      ""
+            set SCRIPT_VERSION          ""
+            set SCRIPT_AUTHOR           ""
+            set SCRIPT_DOCS             null
+            set SCRIPT_URL              ""
+            set SCRIPT_TROUBLESHOOTING  null
+            set SCRIPT_MIN_VERS_EGG     null
+            set SCRIPT_MIN_VERS_TCL     null
+            set SCRIPT_PKG_REQUIRE      null
+            set SCRIPT_POST_INSTALL     null
+            if { [dict exists ${SCRIPT_DATA} name] }                { set SCRIPT_NAME               [dict get ${SCRIPT_DATA} name] }
+            if { ${SCRIPT_NAME} == "" } { continue }
+            if { [dict exists ${SCRIPT_DATA} section] }             { set SCRIPT_SECTION            [dict get ${SCRIPT_DATA} section] }
+            if { [dict exists ${SCRIPT_DATA} description] }         { set SCRIPT_DESCRIPTION        [dict get ${SCRIPT_DATA} description] }
+            if { [dict exists ${SCRIPT_DATA} version] }             { set SCRIPT_VERSION            [dict get ${SCRIPT_DATA} version] }
+            if { [dict exists ${SCRIPT_DATA} author] }              { set SCRIPT_AUTHOR             [dict get ${SCRIPT_DATA} author] }
+            if { [dict exists ${SCRIPT_DATA} documentation] }       { set SCRIPT_DOCS               [dict get ${SCRIPT_DATA} documentation] }
+            if { [dict exists ${SCRIPT_DATA} source] }              { set SCRIPT_URL                [dict get ${SCRIPT_DATA} source] }
+            if { [dict exists ${SCRIPT_DATA} troubleshooting] }     { set SCRIPT_TROUBLESHOOTING    [dict get ${SCRIPT_DATA} troubleshooting] }
+            if { [dict exists ${SCRIPT_DATA} mineggdropversion] }   { set SCRIPT_MIN_VERS_EGG       [dict get ${SCRIPT_DATA} mineggdropversion] }
+            if { [dict exists ${SCRIPT_DATA} mintclversion] }       { set SCRIPT_MIN_VERS_TCL       [dict get ${SCRIPT_DATA} mintclversion] }
+            if { [dict exists ${SCRIPT_DATA} packagesrequire] }     { set SCRIPT_PKG_REQUIRE        [dict get ${SCRIPT_DATA} packagesrequire] }
+            if { [dict exists ${SCRIPT_DATA} postinstalltext] }     { set SCRIPT_POST_INSTALL       [dict get ${SCRIPT_DATA} postinstalltext] }
+            incr SOURCE(SCRIPT_NUMBER)
+            incr SCRIPTS_CNT
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} SOURCENAME ${LIST_NAME}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} SOURCEDATE ${LIST_DATE}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} SOURCECONTACT ${LIST_CONTACT}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} CODENAME ${SCRIPT_NAME}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} CODEVERS ${SCRIPT_VERSION}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} CATEGORY ${SCRIPT_SECTION}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} DESCRIPTION ${SCRIPT_DESCRIPTION}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} AUTHOR ${SCRIPT_AUTHOR}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} DOCS ${SCRIPT_DOCS}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} URL ${SCRIPT_URL}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} TROUBLESHOOTING ${SCRIPT_TROUBLESHOOTING}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} MIN_VERS_EGG ${SCRIPT_MIN_VERS_EGG}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} MIN_VERS_TCL ${SCRIPT_MIN_VERS_TCL}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} PKG_REQUIRE ${SCRIPT_PKG_REQUIRE}
+            dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} POST_INSTALL ${SCRIPT_POST_INSTALL}
+        }
     }
+    dict set DBSource ${LIST_NAME} SCRIPTS_CNT ${SCRIPTS_CNT}
     puts [format "Informations list: '%s' by '%s' with '%s' scripts Last update: '%s'" ${LIST_NAME} ${LIST_CONTACT} ${SCRIPTS_CNT} ${LIST_DATE}]
+    return 1
 }
 namespace eval ::TSM::JSon {}
 proc ::TSM::JSon::Valid { FILENAME JSON_DATA } {
@@ -148,7 +213,7 @@ proc ::TSM::JSon::Valid { FILENAME JSON_DATA } {
         return -code error "::TSM::JSon::Valid ERROR: The file '${FILENAME}' is not an JSON FILE!"
     }
     if { [catch { ::json::json2dict ${JSON_DATA} } ERR_MSG] } {
-   return -code error "::TSM::JSon::Valid ERROR: The file '${FILENAME}' is not an correct format JSON FILE! (JSON ERROR FORMAT)"
+        return -code error "::TSM::JSon::Valid ERROR: The file '${FILENAME}' is not an correct format JSON FILE! (JSON ERROR FORMAT)"
   }
     return 1
 }
@@ -171,7 +236,6 @@ proc ::TSM::File::Read:Data { FILENAME } {
 proc ::TSM::File::Check:Perms { FILENAME {exit 0} } {
     if { ![file isfile ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not an file." ${exit}; } 
     if { ![file readable  ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not readable file. check perms" ${exit}; } 
-    
     return 1
 }
     # https://boulets.eggdrop.fr/tcl/routines/tcl-toolbox-0033.html
@@ -179,16 +243,12 @@ namespace eval ::TSM::DBSource {}
 ###############################################################################
 ### Crée une entrée dans la base de données.
 ###############################################################################
-proc ::TSM::DBSource::create_entry {args} {
-    variable DBSource
-    if { ![::tcl::info::exists DBSource] } { variable DBSource {} }
-    ::tcl::dict::set DBSource {*}${args}
-}
+
 ###############################################################################
 ### Supprime une catégorie et ses sous-catégories dans la base de données.
 ###############################################################################
 proc ::TSM::DBSource::delete_entry {args} {
-    variable DBSource
+    variable ::TSM::DBSource
     if { ![::tcl::info::exists DBSource] } {
         return -code error "base de données vide"
     } elseif { ![::tcl::dict::exists $DBSource {*}${args}] } {
@@ -203,7 +263,7 @@ proc ::TSM::DBSource::delete_entry {args} {
 ### Affiche les entrées que contiennent une catégorie dans la base de données.
 ###############################################################################
 proc ::TSM::DBSource::get_entries {args} {
-    variable DBSource
+    variable ::TSM::DBSource
     if { ![::tcl::info::exists DBSource] } {
         return -code error  "base de données vide"
     } else {
@@ -218,7 +278,7 @@ proc ::TSM::DBSource::get_entries {args} {
 ### Affiche la valeur d'une entrée dans la base de données.
 ###############################################################################
 proc ::TSM::DBSource::get_data {args} {
-    variable DBSource
+    variable ::TSM::DBSource
     if { ![::tcl::info::exists DBSource] } {
         return -code error "base de données vide"
     } else {
@@ -229,6 +289,34 @@ proc ::TSM::DBSource::get_data {args} {
         }
     }
 }
+proc ::TSM::DBSource::exists {args} {
+    variable ::TSM::DBSource
+    if { ![::tcl::info::exists DBSource] } {
+        return 0
+    } else {
+        if { [catch { ::tcl::dict::get $DBSource {*}${args} } result] } {
+            return 0
+        } else {
+            return 1
+        }
+    }
+}
+proc ::TSM::DBSource::save { DB_FILE } {
+    variable ::TSM::DBSource
+    set FILE_PIPE       [open ${DB_FILE} w];
+    fconfigure ${FILE_PIPE} -translation binary;
+    puts -nonewline ${FILE_PIPE} ${DBSource}
+    close ${FILE_PIPE}
+}
+proc ::TSM::DBSource::restore { DB_FILE } {
+    variable ::TSM::DBSource
+    set FILE_PIPE   [open ${DB_FILE} r];
+    set FILE_DATA   [gets ${FILE_PIPE}];
+    set DBSource    [dict get ${FILE_DATA}]
+    
+    close ${FILE_PIPE}
+    return $DBSource
+}
 ###############################################################################
 ### Incrémente une entrée numérique dans la base de données.
 ### L'incrément peut être une valeur négative et/ou décimale.
@@ -238,7 +326,7 @@ proc ::TSM::DBSource::incr_value {args} {
         return -code error "l'incrément doit être numérique"
     } else {
         set args [lreplace ${args} end end]
-        variable DBSource
+        variable ::TSM::DBSource
         if { ![::tcl::info::exists DBSource] } {
             return -code error "base de données vide"
         } else {
@@ -267,7 +355,6 @@ proc ::TSM::Config::Locate:FILENAME {} {
 proc ::TSM::Config::Check {} {
     variable ::TSM::CONFIG
     variable ::TSM::SOURCE
-    #puts [dict get ${CONFIG(DATA)}]
     if { ![dict exists ${CONFIG(DATA)} sources] } { 
         ::TSM::Show::Error "No sources list in '${CONFIG(FILENAME)}' file." 2;
     }
@@ -303,12 +390,62 @@ proc ::TSM::URL::Read:json2dict { URL } {
     return [::json::json2dict ${URL_DATA}];
 }
 namespace eval ::TSM::PKG {}
+
 proc ::TSM::PKG::Load { PKG_NAME {PKG_VERS ""} } {
     if { ${PKG_VERS} == "" && [catch { package require ${PKG_NAME} } ERR] } { 
         ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} (${ERR})" 2
     } elseif { ${PKG_VERS} != "" && [catch { package require ${PKG_NAME} ${PKG_VERS} } ERR] } { 
         ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} ${PKG_VERS} (${ERR})" 2
     }
+}
+namespace eval ::TSM::COMMANDS {}
+proc ::TSM::COMMANDS::UpdateDB {} {
+    ::TSM::Source::Get:FILENAME:Path
+    ::TSM::List::Read
+}
+proc ::TSM::COMMANDS::GenDateNow {} {
+    puts "[clock format [clock seconds] -format "%a, %d %b %Y %H:%M:%S %Z" -gmt 1]"
+}
+proc ::TSM::COMMANDS::List { args } {
+    variable ::TSM::DBSource
+    set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
+    puts "*-------------------------------------------------------------------------*"
+    puts "|  id  |  Name  |  version |  CATEGORY  descripstion  |  AUTHOR  |  repo  |"
+    puts "*-------------------------------------------------------------------------*"
+    dict for {id info} [dict get $DB_DATA SCRIPTS_INDEX] {
+        dict with info {
+            puts "|  $id  |  $CODENAME  |  $CODEVERS  |  $CATEGORY  |  $DESCRIPTION  |  $AUTHOR  |  $SOURCENAME"
+        }
+    }
+    puts "*-------------------------------------------------------------------------*"
+}
+proc ::TSM::COMMANDS::Show { num } {
+    variable ::TSM::DBSource
+    set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
+    if { ![dict exists $DB_DATA SCRIPTS_INDEX $num] } {
+        ::TSM::Show::Error "${::argv0} Show: script id '$num' no found" 2
+    }
+    set SCRIPT_DATA [dict get $DB_DATA SCRIPTS_INDEX $num]
+    dict with SCRIPT_DATA {
+        puts "   SOURCENAME: $SOURCENAME"
+        puts "   SOURCEDATE: $SOURCEDATE"
+        puts "   SOURCECONTACT: $SOURCECONTACT"
+        puts "   CODENAME: $CODENAME"
+        puts "   CODEVERS: $CODEVERS"
+        puts "   CATEGORY: $CATEGORY"
+        puts "   DESCRIPTION: $DESCRIPTION"
+        puts "   AUTHOR: $AUTHOR"
+        puts "   URL: $URL"
+        puts "   TROUBLESHOOTING: $TROUBLESHOOTING"
+        puts "   MIN_VERS_EGG: $MIN_VERS_EGG"
+        puts "   MIN_VERS_TCL: $MIN_VERS_TCL"
+        puts "   PKG_REQUIRE: $PKG_REQUIRE"
+        puts "   POST_INSTALL: $POST_INSTALL"
+    }
+
+}
+proc ::TSM::COMMANDS::Help { args } {
+    puts "soon $args"
 }
 proc ::TSM::main { } {
     variable ::TSM::SOURCE
@@ -317,9 +454,22 @@ proc ::TSM::main { } {
     ::TSM::Config::Load
     ::TSM::Config::Check
     set COMMANDS [lindex ${::argv} 0]
+    set SUBCOMMANDS [lrange ${::argv} 1 end]
     switch -nocase ${COMMANDS} {
-        update  {
-            ::TSM::Source::Update
+        UpdateDB  {
+            ::TSM::COMMANDS::UpdateDB
+        }
+        GenDateNow  {
+            ::TSM::COMMANDS::GenDateNow
+        }
+        List  {
+            ::TSM::COMMANDS::List ${SUBCOMMANDS}
+        }
+        Show  {
+            ::TSM::COMMANDS::Show ${SUBCOMMANDS}
+        }
+        Help  {
+            ::TSM::COMMANDS::Help ${SUBCOMMANDS}
         }
         default {
             ::TSM::Show::Help
@@ -327,10 +477,8 @@ proc ::TSM::main { } {
     }
 }
 proc ::TSM::Init {} {
-    ::TSM::PKG::Load json 1.3
+    ::TSM::PKG::Load json
     ::TSM::PKG::Load http
     ::TSM::PKG::Load tls
 }
-
-
 ::TSM::main

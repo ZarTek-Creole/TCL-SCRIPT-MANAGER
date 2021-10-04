@@ -10,4 +10,5 @@
 .history/
 
 # TSM
-TSM.cfg
+*.cfg
+*.db

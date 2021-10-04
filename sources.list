@@ -1,12 +1,12 @@
 {
   "list": {
-    "updateat": "Mon 11 Jan 2021 10:15:39 AM CET",
-    "name": "ZarTek test List",
-    "contact": "darkshelldev@gmail.com"
+    "updateat": "Mon, 04 Oct 2021 15:21:19 GMT",
+    "name": "MalaGaM public Scripts List",
+    "contact": "https://github.com/MalaGaM"
   },
   "scripts": [
     {
-      "name": "MalaGaM/mceggdrop",
+      "name": "mceggdrop",
       "section": "FiSH",
       "description": "Mircryption (FiSH) for eggdrop.",
       "version": "1.00.30",
@@ -16,6 +16,8 @@
       "troubleshooting": "In case of problems, contact http://www.donationcoder.com/Software/Mouser/mircryption/others_eggdrop.php",
       "mineggdropversion": "1.8.4",
       "mintclversion": "8.5",
+      "packagesrequire": [
+      ],
       "postinstalltext": [
         "1) Copy these files to your eggdrop/scripts/ directory.",
         "2) Add lines to your eggdrop .conf file, in the ##### SCRIPTS ##### section,",
@@ -25,6 +27,182 @@
         "3) Edit the tcleggdrop_mcps_sitesettings.ini file and modify it for your",
         "    channels and preferences.",
         "3) Restart your eggdrop."
+      ]
+    },
+    {
+      "name": "Youtube-Link",
+      "section": "API",
+      "description": "This script retrieves information about Youtube titles using Youtube API V3.",
+      "version": "2.6.2",
+      "author": "MalaGaM",
+      "documentation": "https://github.com/MalaGaM/TCL-Youtube-Link/wiki",
+      "source": "https://github.com/MalaGaM/TCL-Youtube-Link",
+      "troubleshooting": "https://github.com/MalaGaM/TCL-Youtube-Link/issues/new",
+      "mineggdropversion": "1.6.20",
+      "mintclversion": "8.5",
+      "packagesrequire": {
+          "tls": "1.7.11",
+          "http": "2.8.9",
+          "json": "1.3",
+          "clock::iso8601": "0.1"
+      },
+      "postinstalltext": [
+        "Read instruction on: https://github.com/MalaGaM/TCL-Youtube-Link/blob/main/README.md"
+      ]
+    },
+    {
+      "name": "PROXYCHECK",
+      "section": "Services",
+      "description": "Services for check Proxxy on connect",
+      "version": "1.1.20210521",
+      "author": "MalaGaM",
+      "documentation": "https://github.com/MalaGaM/TCL-PROXYCHECK/wiki",
+      "source": "https://github.com/MalaGaM/TCL-PROXYCHECK",
+      "troubleshooting": "https://github.com/MalaGaM/TCL-PROXYCHECK/issues/new",
+      "mineggdropversion": null,
+      "mintclversion": null,
+      "packagesrequire": {
+          "IRCServices": "0.0.1",
+          "sqlite3": null,
+          "http": null,
+          "json": null,
+          "dns": null,
+          "ip": null,
+          "tls": null
+      },
+      "postinstalltext": [
+        "Read instruction on: https://github.com/MalaGaM/TCL-PROXYCHECK/blob/main/README.md"
+      ]
+    },
+    {
+      "name": "EvaServ",
+      "section": "Services",
+      "description": "Services IRC Eva",
+      "version": "1.5RC",
+      "author": "MalaGaM",
+      "documentation": "https://github.com/MalaGaM/TCL-EvaServ/wiki",
+      "source": "https://github.com/MalaGaM/TCL-EvaServ",
+      "troubleshooting": "https://github.com/MalaGaM/TCL-EvaServ/issues/new",
+      "mineggdropversion": null,
+      "mintclversion": null,
+      "packagesrequire": {
+      },
+      "postinstalltext": [
+        "Read instruction on: https://github.com/MalaGaM/TCL-EvaServ/blob/main/README.md"
+      ]
+    },
+    {
+      "name": "DictionaryAPI",
+      "section": "API",
+      "description": "TCL script for eggdrop that uses Dictionary v2 API to find and get word definitions",
+      "version": "1.2.4",
+      "author": "MalaGaM",
+      "documentation": "https://github.com/MalaGaM/TCL-DictionaryAPI/wiki",
+      "source": "https://github.com/MalaGaM/TCL-DictionaryAPI",
+      "troubleshooting": "https://github.com/MalaGaM/TCL-DictionaryAPI/issues/new",
+      "mineggdropversion": "1.6.20",
+      "mintclversion": "8.5",
+      "packagesrequire": {
+        "tls": "1.7",
+        "http": "2.9",
+        "json": "1.3"
+      },
+      "postinstalltext": [
+        "Read instruction on: https://github.com/MalaGaM/TCL-DictionaryAPI/blob/main/README.md"
+      ]
+    },
+    {
+      "name": "IRCServices",
+      "section": "Packages",
+      "description": "IRCServices create an interface in TCL and the connection of a Service to an IRCD (like anope)",
+      "version": "0.0.4",
+      "author": "MalaGaM",
+      "documentation": "https://github.com/MalaGaM/TCL-PKG-IRCServices/wiki",
+      "source": "https://github.com/MalaGaM/TCL-PKG-IRCServices",
+      "troubleshooting": "https://github.com/MalaGaM/TCL-PKG-IRCServices/issues/new",
+      "mineggdropversion": "1.6.20",
+      "mintclversion": "8.6",
+      "packagesrequire": {
+        "tls": "1.7.20",
+        "logger": null
+      },
+      "postinstalltext": [
+        "Read instruction on: https://github.com/MalaGaM/TCL-PKG-IRCServices/blob/main/README.md"
+      ]
+    },
+    {
+      "name": "ClaraServ",
+      "section": "Services",
+      "description": "IRC services in TCL - Trade show animation, Network help, User profile",
+      "version": "1.1.20210404",
+      "author": "MalaGaM",
+      "documentation": "https://github.com/MalaGaM/TCL-ClaraServ/wiki",
+      "source": "https://github.com/MalaGaM/TCL-ClaraServ",
+      "troubleshooting": "https://github.com/MalaGaM/TCL-ClaraServ/issues/new",
+      "mineggdropversion": null,
+      "mintclversion": null,
+      "packagesrequire": {
+        "IRCServices": "0.0.1"
+      },
+      "postinstalltext": [
+        "Read instruction on: https://github.com/MalaGaM/TCL-ClaraServ/blob/main/README.md"
+      ]
+    },
+    {
+      "name": "MOCKS",
+      "section": "Tools",
+      "description": "Manage 'My Own soCKs Server' with eggdrop bot ( https://sourceforge.net/projects/mocks/ )",
+      "version": "1.0",
+      "author": "MalaGaM",
+      "documentation": "https://github.com/MalaGaM/TCL-MOCKS/wiki",
+      "source": "https://github.com/MalaGaM/TCL-MOCKS",
+      "troubleshooting": "https://github.com/MalaGaM/TCL-MOCKS/issues/new",
+      "mineggdropversion": null,
+      "mintclversion": null,
+      "packagesrequire": {
+      },
+      "postinstalltext": [
+        "Read instruction on: https://github.com/MalaGaM/TCL-MOCKS/blob/main/README.md"
+      ]
+    },
+    {
+      "name": "BYPASS-WHO-BLOCKED",
+      "section": "Tools",
+      "description": "This script allows created false user responses to Eggdrop to WHO / WHOX commands",
+      "version": "1.0",
+      "author": "MalaGaM",
+      "documentation": "https://github.com/MalaGaM/TCL-BYPASS-WHO-BLOCKED/wiki",
+      "source": "https://github.com/MalaGaM/TCL-BYPASS-WHO-BLOCKED",
+      "troubleshooting": "https://github.com/MalaGaM/TCL-BYPASS-WHO-BLOCKED/issues/new",
+      "mineggdropversion": "1.6.20",
+      "mintclversion": "8.5",
+      "packagesrequire": {
+      },
+      "postinstalltext": [
+        "Read instruction on: https://github.com/MalaGaM/TCL-BYPASS-WHO-BLOCKED/blob/main/README.md"
+      ]
+    },
+    {
+      "name": "cbFTPtcl",
+      "section": "Packages",
+      "description": "cbFTPtcl client implementation for Tcl.",
+      "version": "0.1",
+      "author": "MalaGaM",
+      "documentation": "https://github.com/MalaGaM/TCL-PKG-cbFTPtcl/wiki",
+      "source": "https://github.com/MalaGaM/TCL-PKG-cbFTPtcl",
+      "troubleshooting": "https://github.com/MalaGaM/TCL-PKG-cbFTPtcl/issues/new",
+      "mineggdropversion": "1.6.20",
+      "mintclversion": "8.6",
+      "packagesrequire": {
+        "base64": "2.4.2",
+        "tls": "1.7.16",
+        "udp": "1.0.11",
+        "http": "2.9.0",
+        "json": "1.3.4",
+        "json::write": "1.0.3"
+      },
+      "postinstalltext": [
+        "Read instruction on: https://github.com/MalaGaM/TCL-PKG-cbFTPtcl/blob/main/README.md"
       ]
     }
   ]
