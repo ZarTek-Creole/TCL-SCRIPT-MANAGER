@@ -406,18 +406,20 @@ proc ::TSM::COMMANDS::UpdateDB {} {
 proc ::TSM::COMMANDS::GenDateNow {} {
     puts "[clock format [clock seconds] -format "%a, %d %b %Y %H:%M:%S %Z" -gmt 1]"
 }
-proc ::TSM::COMMANDS::List { args } {
+proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
     variable ::TSM::DBSource
     set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
-    puts "*-------------------------------------------------------------------------*"
-    puts "|  id  |  Name  |  version |  CATEGORY  descripstion  |  AUTHOR  |  repo  |"
-    puts "*-------------------------------------------------------------------------*"
+    puts "*-----------------------------------------------------------------------------------------*"
+    puts "|    id    |    Name    |    version   |    CATEGORY    |    descripstion    |    repo    |"
+    puts "*-----------------------------------------------------------------------------------------*"
     dict for {id info} [dict get $DB_DATA SCRIPTS_INDEX] {
         dict with info {
-            puts "|  $id  |  $CODENAME  |  $CODEVERS  |  $CATEGORY  |  $DESCRIPTION  |  $AUTHOR  |  $SOURCENAME"
+            if { [string match -nocase "*${SEARCH_TEXT}*" ${CODENAME}] } {
+                puts "|  $id  |  $CODENAME  |  $CODEVERS  |  $CATEGORY  |  $DESCRIPTION  |  $SOURCENAME"
+            }
         }
     }
-    puts "*-------------------------------------------------------------------------*"
+    puts "*-----------------------------------------------------------------------------------------*"
 }
 proc ::TSM::COMMANDS::Show { num } {
     variable ::TSM::DBSource
