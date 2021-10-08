@@ -49,18 +49,19 @@ namespace eval ::TSM {
                                 "/usr/etc/tsm" 
                             ];
 }
+#########
 namespace eval ::TSM::Show {}
 proc ::TSM::Show::Banner {} {
     puts "  _____ ___ __  __ \n |_   _/ __|  \\/  |\n   | | \\__ \\ |\\/| |\n   |_| |___/_|  |_|\n-TCL-SCRIPT-MANAGER-"
 }
 proc ::TSM::Show::Help {} {
     puts "This script expects a parameter. Use:"
-    puts "${::argv0} UpdateDB           - update database list of available scripts"
-    puts "${::argv0} List               - list scripts based on package names"
+    ::TSM::COMMANDS::Help::UpdateDB
+    ::TSM::COMMANDS::Help::List
     #puts "${::argv0} Search            - search in scripts descriptions"
-    puts "${::argv0} Show <num>         - show script details"
+    ::TSM::COMMANDS::Help::Show
     #puts "${::argv0} Install <num>     - install script"
-    puts "${::argv0} GenDateNow         - Generator date now with format '%a, %d %b %Y %H:%M:%S %Z'"
+    ::TSM::COMMANDS::Help::GenDateNow
     puts "${::argv0} help <parameter>   - Show help for <parameter>"
 }
 proc ::TSM::Show::Error { ERR_MSG {exit 0} } {
@@ -68,7 +69,7 @@ proc ::TSM::Show::Error { ERR_MSG {exit 0} } {
     if { ${exit} != 0 } { exit ${exit} }
  
 }
-
+#########
 namespace eval ::TSM::Source {}
 proc ::TSM::Source::Get:FILENAME:Path {} {
     variable ::TSM::SOURCE
@@ -97,6 +98,7 @@ proc ::TSM::Source::Get:FILENAME:Path {} {
     }
     set SOURCE(LIST) [lsort -unique ${SOURCE_LIST}]
 }
+#########
 namespace eval ::TSM::List {}
 proc ::TSM::List::Validator { SOURCE_LIST_DATA SOURCE_URI } {
     if { ![dict exists ${SOURCE_LIST_DATA} list] } { 
@@ -207,6 +209,7 @@ proc ::TSM::List::Get:Informations { LIST_DATA SOURCE_URI } {
     puts [format "Informations list: '%s' by '%s' with '%s' scripts Last update: '%s'" ${LIST_NAME} ${LIST_CONTACT} ${SCRIPTS_CNT} ${LIST_DATE}]
     return 1
 }
+#########
 namespace eval ::TSM::JSon {}
 proc ::TSM::JSon::Valid { FILENAME JSON_DATA } {
     if { ![::json::validate ${JSON_DATA}] || [llength $JSON_DATA] == 0} {
@@ -217,6 +220,7 @@ proc ::TSM::JSon::Valid { FILENAME JSON_DATA } {
   }
     return 1
 }
+#########
 namespace eval ::TSM::File {}
 proc ::TSM::File::Read:json2dict { FILENAME } {
     set FILE_DATA   [::TSM::File::Read:Data ${FILENAME}]
@@ -238,6 +242,7 @@ proc ::TSM::File::Check:Perms { FILENAME {exit 0} } {
     if { ![file readable  ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not readable file. check perms" ${exit}; } 
     return 1
 }
+#########
     # https://boulets.eggdrop.fr/tcl/routines/tcl-toolbox-0033.html
 namespace eval ::TSM::DBSource {}
 ###############################################################################
@@ -342,7 +347,7 @@ proc ::TSM::DBSource::incr_value {args} {
         }
     }
 }
-###
+#########
 namespace eval ::TSM::Config {}
 proc ::TSM::Config::Locate:FILENAME {} {
     variable ::TSM::CONFIG
@@ -372,7 +377,7 @@ proc ::TSM::Config::Load {} {
     ::TSM::File::Check:Perms ${CONFIG(FilePath)}
     set CONFIG(DATA) [::TSM::File::Read:json2dict ${CONFIG(FilePath)}]
 }
-
+#########
 namespace eval ::TSM::URL {}
 proc ::TSM::URL::Read:json2dict { URL } {
     if { [string match https* $URL] } { ::http::register https 443 [list ::tls::socket -tls1 1 -autoservername 1] }
@@ -389,6 +394,7 @@ proc ::TSM::URL::Read:json2dict { URL } {
     }
     return [::json::json2dict ${URL_DATA}];
 }
+#########
 namespace eval ::TSM::PKG {}
 
 proc ::TSM::PKG::Load { PKG_NAME {PKG_VERS ""} } {
@@ -398,6 +404,7 @@ proc ::TSM::PKG::Load { PKG_NAME {PKG_VERS ""} } {
         ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} ${PKG_VERS} (${ERR})" 2
     }
 }
+#########
 namespace eval ::TSM::COMMANDS {}
 proc ::TSM::COMMANDS::UpdateDB {} {
     ::TSM::Source::Get:FILENAME:Path
@@ -446,9 +453,46 @@ proc ::TSM::COMMANDS::Show { num } {
     }
 
 }
+#########
+namespace eval ::TSM::COMMANDS::Help {}
 proc ::TSM::COMMANDS::Help { args } {
-    puts "soon $args"
+    set COMMANDS    [lindex ${args} 0]
+    set SUBCOMMANDS [lrange ${args} 1 end]
+    switch -nocase ${COMMANDS} {
+        UpdateDB  {
+            ::TSM::COMMANDS::Help::UpdateDB 1
+        }
+        List  {
+            ::TSM::COMMANDS::Help::List 1
+        }
+        GenDateNow  {
+            ::TSM::COMMANDS::Help::GenDateNow 1
+        }
+        Show  {
+            ::TSM::COMMANDS::Help::Show 1
+        }
+        default {
+            ::TSM::Show::Help
+        }
+    }
 }
+proc ::TSM::COMMANDS::Help::UpdateDB    { { FULL_DESCRIPTION 0 } } {
+    puts "${::argv0} UpdateDB           - Update database list of available scripts"
+}
+proc ::TSM::COMMANDS::Help::List        { { FULL_DESCRIPTION 0 } } {
+    puts "${::argv0} List <word>        - List scripts based on script names"
+    if { ${FULL_DESCRIPTION} } {
+        puts " ";
+        puts "      <word> Full or partial name of a script"
+    }
+}
+proc ::TSM::COMMANDS::Help::GenDateNow  { { FULL_DESCRIPTION 0 } } {
+    puts "${::argv0} GenDateNow         - Generator date now with format '%a, %d %b %Y %H:%M:%S %Z'"
+}
+proc ::TSM::COMMANDS::Help::Show        { { FULL_DESCRIPTION 0 } } {
+    puts "${::argv0} Show <num>         - Show script details"
+}
+#########
 proc ::TSM::main { } {
     variable ::TSM::SOURCE
     ::TSM::Init
@@ -461,11 +505,11 @@ proc ::TSM::main { } {
         UpdateDB  {
             ::TSM::COMMANDS::UpdateDB
         }
-        GenDateNow  {
-            ::TSM::COMMANDS::GenDateNow
-        }
         List  {
             ::TSM::COMMANDS::List ${SUBCOMMANDS}
+        }
+        GenDateNow  {
+            ::TSM::COMMANDS::GenDateNow
         }
         Show  {
             ::TSM::COMMANDS::Show ${SUBCOMMANDS}
