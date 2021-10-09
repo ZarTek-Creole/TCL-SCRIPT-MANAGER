@@ -435,7 +435,7 @@ proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
     set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
     incr found
     puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
-    puts "|   id   |      Name      |     version      |    Category    |                    descripstion                    |         repo         |"
+    puts "|   ID   |      Name      |     version      |    Category    |                    Sescripstion                    |         Repo         |"
     puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
     dict for {id info} [dict get $DB_DATA SCRIPTS_INDEX] {
         dict with info {
@@ -458,7 +458,7 @@ proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
     puts "*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*"
     puts "| [::TSM::COMMANDS::FCT::SPACE:TEXT "Help: ${::argv0} List -help" 42] | [::TSM::COMMANDS::FCT::SPACE:TEXT "Category: ${params(c)}" 42] | [::TSM::COMMANDS::FCT::SPACE:TEXT "Limit: ${params(l)}" 44]  |"
     puts "*--------------------------------------------*--------------------------------------------*-----------------------------------------------*"
-    puts "* For more information on a script: ${::argv0} show <id>"
+    puts "* For more information on a script: ${::argv0} show <ID|Name>"
 }
 proc ::TSM::COMMANDS::Show { STR_SEARCH } {
     variable ::TSM::DBSource
@@ -548,7 +548,7 @@ proc ::TSM::COMMANDS::Help::GenDateNow  { { FULL_DESCRIPTION 0 } } {
     puts "${::argv0} GenDateNow             - Generator date now with format '%a, %d %b %Y %H:%M:%S %Z'"
 }
 proc ::TSM::COMMANDS::Help::Show        { { FULL_DESCRIPTION 0 } } {
-    puts "${::argv0} Show <Num|Script_Name>             - Show script details"
+    puts "${::argv0} Show <Num|Script_Name> - Show script details"
 }
 #########
 namespace eval ::TSM::COMMANDS::FCT {}
