@@ -24,12 +24,14 @@
 ###############################################################################################
 namespace eval ::TSM {
     variable ::TSM::DBSource [dict create]
+
     variable SCRIPTS
     array set SCRIPTS {
         NAME    "TSM"
         LNAME   "TCL-SCRIPT-MANAGER"
         VERSION "0.0.1"
     }
+
     variable ::TSM::CONFIG
     array set CONFIG {
         FILENAME    "TSM.cfg"
@@ -41,6 +43,7 @@ namespace eval ::TSM {
                                 "/etc/tsm"  \
                                 "/usr/etc"  \
                             ];
+
     variable ::TSM::SOURCE
     set SOURCE(PathList)    [list               \
                                 [pwd]           \
@@ -48,6 +51,13 @@ namespace eval ::TSM {
                                 "/etc/tsm"      \
                                 "/usr/etc/tsm" 
                             ];
+
+    variable ::TSM::CMDLINE
+    set CMDLINE(list_options) {
+        {l.arg  "5"     "set the limit to show"}
+        {c.arg  "all"   "set category to find"}
+    }
+    set CMDLINE(list_usage) "List \[options] search_string ...\noptions:"
 }
 #########
 namespace eval ::TSM::Show {}
@@ -415,18 +425,39 @@ proc ::TSM::COMMANDS::GenDateNow {} {
 }
 proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
     variable ::TSM::DBSource
+    variable ::TSM::CMDLINE
+    try {
+        array set params [::cmdline::getoptions SEARCH_TEXT $CMDLINE(list_options) $CMDLINE(list_usage)]
+    } trap {CMDLINE USAGE} {msg o} {
+        puts $msg
+	    exit 1
+    }
     set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
-    puts "*-----------------------------------------------------------------------------------------*"
-    puts "|    id    |    Name    |    version   |    CATEGORY    |    descripstion    |    repo    |"
-    puts "*-----------------------------------------------------------------------------------------*"
+    incr found
+    puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
+    puts "|   id   |      Name      |     version      |    Category    |                    descripstion                    |         repo         |"
+    puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
     dict for {id info} [dict get $DB_DATA SCRIPTS_INDEX] {
         dict with info {
-            if { [string match -nocase "*${SEARCH_TEXT}*" ${CODENAME}] } {
-                puts "|  $id  |  $CODENAME  |  $CODEVERS  |  $CATEGORY  |  $DESCRIPTION  |  $SOURCENAME"
+            if { 
+                [string match -nocase "*${SEARCH_TEXT}*" ${CODENAME}] \
+                && ( [string match -nocase "all" ${params(c)}] || [string match -nocase ${params(c)} ${CATEGORY} ] )
+            } {
+                if { $found > $params(l) } { break }
+                set MSG     "| [TSM::TXT:ESPACE:DISPLAY ${id} 6] "
+                append MSG  "| [TSM::TXT:ESPACE:DISPLAY ${CODENAME} 14] "
+                append MSG  "| [TSM::TXT:ESPACE:DISPLAY ${CODEVERS} 16] "
+                append MSG  "| [TSM::TXT:ESPACE:DISPLAY ${CATEGORY} 14] "
+                append MSG  "| [TSM::TXT:ESPACE:DISPLAY ${DESCRIPTION} 50] "
+                append MSG  "| [TSM::TXT:ESPACE:DISPLAY ${SOURCENAME} 20] |"
+                puts $MSG
+                incr found
             }
         }
     }
-    puts "*-----------------------------------------------------------------------------------------*"
+    puts "*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*"
+    puts "| [TSM::TXT:ESPACE:DISPLAY "Help: ${::argv0} List -help" 42] | [TSM::TXT:ESPACE:DISPLAY "Category: ${params(c)}" 42] | [TSM::TXT:ESPACE:DISPLAY "Limit: ${params(l)}" 44]  |"
+    puts "*--------------------------------------------*--------------------------------------------*-----------------------------------------------*"
 }
 proc ::TSM::COMMANDS::Show { num } {
     variable ::TSM::DBSource
@@ -477,20 +508,37 @@ proc ::TSM::COMMANDS::Help { args } {
     }
 }
 proc ::TSM::COMMANDS::Help::UpdateDB    { { FULL_DESCRIPTION 0 } } {
-    puts "${::argv0} UpdateDB           - Update database list of available scripts"
+    puts "${::argv0} UpdateDB               - Update database list of available scripts"
 }
 proc ::TSM::COMMANDS::Help::List        { { FULL_DESCRIPTION 0 } } {
-    puts "${::argv0} List <word>        - List scripts based on script names"
+    puts "${::argv0} List <search_string>   - List scripts based on script names"
     if { ${FULL_DESCRIPTION} } {
-        puts " ";
-        puts "      <word> Full or partial name of a script"
+        puts ""
+        puts [::cmdline::usage $::TSM::CMDLINE(list_options) $::TSM::CMDLINE(list_usage)]
     }
 }
 proc ::TSM::COMMANDS::Help::GenDateNow  { { FULL_DESCRIPTION 0 } } {
-    puts "${::argv0} GenDateNow         - Generator date now with format '%a, %d %b %Y %H:%M:%S %Z'"
+    puts "${::argv0} GenDateNow             - Generator date now with format '%a, %d %b %Y %H:%M:%S %Z'"
 }
 proc ::TSM::COMMANDS::Help::Show        { { FULL_DESCRIPTION 0 } } {
-    puts "${::argv0} Show <num>         - Show script details"
+    puts "${::argv0} Show <num>             - Show script details"
+}
+proc ::TSM::TXT:ESPACE:DISPLAY { text length } {
+	set text			[string trim $text]
+    set text_length		[string length $text]
+    if {[expr {$text_length%2}]} { 
+        set text_length		[expr [string length $text]+1]
+        set text            "$text "
+    }
+	
+	# si le $text est plus grand que $length on le retourne sans modif
+	if { $text_length > $length } { set text "[string range $text 0 [expr $length-3]].." }
+	# si le text a une longueur impair, on rajoute un space derriere
+	if { [expr {($text_length % 2) != 0}] } { set text " $text" }
+	
+	set espace_length	[expr ($length - $text_length)/2]
+	set espace			[string repeat " " $espace_length]; 
+	return $espace$text$espace 
 }
 #########
 proc ::TSM::main { } {
@@ -523,8 +571,11 @@ proc ::TSM::main { } {
     }
 }
 proc ::TSM::Init {} {
+    ::TSM::PKG::Load Tcl 8.5
     ::TSM::PKG::Load json
     ::TSM::PKG::Load http
     ::TSM::PKG::Load tls
+    ::TSM::PKG::Load cmdline 1.5
 }
 ::TSM::main
+
