@@ -133,7 +133,7 @@
     {
       "name": "ClaraServ",
       "section": "Services",
-      "description": "IRC services in TCL - Trade show animation, Network help, User profile",
+      "description": "Trade show animation, Network help, User profile",
       "version": "1.1.20210404",
       "author": "MalaGaM",
       "documentation": "https://github.com/MalaGaM/TCL-ClaraServ/wiki",

@@ -5,9 +5,11 @@
 #		TSM (TCL-SCRIPT-MANAGER)
 #
 #	Description	:
-#		TSM (TCL-SCRIPT-MANAGER) is a TCL script manager that allows you to easily install, update and uninstall TCL scripts.
+#		TSM (TCL-SCRIPT-MANAGER) is a terminal TCL script manager that allows you to easily install, update and uninstall TCL scripts.
+#       It is based on a system of "source lists" containing catalogs of customizable scripts (on git), like a kind of APT for TCL Eggdrop script.
 #
-#		TSM (TCL-SCRIPT-MANAGER) est un gestionnaire de scripts TCL qui vous permet d'installer, de mettre à jour et de désinstaller facilement des scripts TCL.
+#		TSM (TCL-SCRIPT-MANAGER) est un gestionnaire de scripts TCL en terminal qui vous permet d'installer, de mettre à jour et de désinstaller facilement des scripts TCL.
+#       Il est basé sur un système de "sources listes" contenant des catalogues de scripts (sur git) personnalisables, comme un genre de APT pour script TCL Eggdrop.
 #
 #	Donation	:
 #		https://github.com/MalaGaM/DONATE
@@ -58,6 +60,12 @@ namespace eval ::TSM {
         {c.arg  "all"   "set category to find"}
     }
     set CMDLINE(list_usage) "List \[options] search_string ...\noptions:"
+
+    set CMDLINE(search_options) {
+        {l.arg  "5"     "set the limit to show"}
+        {c.arg  "all"   "set category to find"}
+    }
+    set CMDLINE(search_usage) "List \[options] search_string ...\noptions:"
 }
 #########
 namespace eval ::TSM::Show {}
@@ -68,11 +76,11 @@ proc ::TSM::Show::Help {} {
     puts "This script expects a parameter. Use:"
     ::TSM::COMMANDS::Help::UpdateDB
     ::TSM::COMMANDS::Help::List
-    #puts "${::argv0} Search                - Search in scripts descriptions"
+    ::TSM::COMMANDS::Help::Search
     ::TSM::COMMANDS::Help::Show
     #puts "${::argv0} Install <num>         - Install script"
     ::TSM::COMMANDS::Help::GenDateNow
-    puts "${::argv0} help <parameter>       - Show help for <parameter>"
+    puts "${::argv0} help       <parameter> - Show help for <parameter>"
 }
 proc ::TSM::Show::Error { ERR_MSG {exit 0} } {
     puts "ERROR: ${ERR_MSG}"
@@ -426,6 +434,7 @@ proc ::TSM::COMMANDS::GenDateNow {} {
 proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
     variable ::TSM::DBSource
     variable ::TSM::CMDLINE
+    namespace import ::TSM::COMMANDS::FCT::*
     try {
         array set params [::cmdline::getoptions SEARCH_TEXT $CMDLINE(list_options) $CMDLINE(list_usage)]
     } trap {CMDLINE USAGE} {msg o} {
@@ -435,7 +444,7 @@ proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
     set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
     incr found
     puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
-    puts "|   ID   |      Name      |     version      |    Category    |                    Sescripstion                    |         Repo         |"
+    puts "|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |"
     puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
     dict for {id info} [dict get $DB_DATA SCRIPTS_INDEX] {
         dict with info {
@@ -444,19 +453,57 @@ proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
                 && ( [string match -nocase "all" ${params(c)}] || [string match -nocase ${params(c)} ${CATEGORY} ] )
             } {
                 if { $found > $params(l) } { break }
-                set MSG     "| [::TSM::COMMANDS::FCT::SPACE:TEXT ${id} 6] "
-                append MSG  "| [::TSM::COMMANDS::FCT::SPACE:TEXT ${CODENAME} 14] "
-                append MSG  "| [::TSM::COMMANDS::FCT::SPACE:TEXT ${CODEVERS} 16] "
-                append MSG  "| [::TSM::COMMANDS::FCT::SPACE:TEXT ${CATEGORY} 14] "
-                append MSG  "| [::TSM::COMMANDS::FCT::SPACE:TEXT ${DESCRIPTION} 50] "
-                append MSG  "| [::TSM::COMMANDS::FCT::SPACE:TEXT ${SOURCENAME} 20] |"
+                set MSG     "| [FCT::SPACE:TEXT ${id} 6] "
+                append MSG  "| [FCT::SPACE:TEXT ${CODENAME} 14] "
+                append MSG  "| [FCT::SPACE:TEXT ${CODEVERS} 16] "
+                append MSG  "| [FCT::SPACE:TEXT ${CATEGORY} 14] "
+                append MSG  "| [FCT::SPACE:TEXT ${DESCRIPTION} 50] "
+                append MSG  "| [FCT::SPACE:TEXT ${SOURCENAME} 20] |"
                 puts $MSG
                 incr found
             }
         }
     }
     puts "*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*"
-    puts "| [::TSM::COMMANDS::FCT::SPACE:TEXT "Help: ${::argv0} List -help" 42] | [::TSM::COMMANDS::FCT::SPACE:TEXT "Category: ${params(c)}" 42] | [::TSM::COMMANDS::FCT::SPACE:TEXT "Limit: ${params(l)}" 44]  |"
+    puts "| [FCT::SPACE:TEXT "Help: ${::argv0} List -help" 42] | [FCT::SPACE:TEXT "Category: ${params(c)}" 42] | [FCT::SPACE:TEXT "Limit: ${params(l)}" 44]  |"
+    puts "*--------------------------------------------*--------------------------------------------*-----------------------------------------------*"
+    puts "* For more information on a script: ${::argv0} show <ID|Name>"
+}
+proc ::TSM::COMMANDS::Search { SEARCH_TEXT } {
+    variable ::TSM::DBSource
+    variable ::TSM::CMDLINE
+    namespace import ::TSM::COMMANDS::FCT::*
+    try {
+        array set params [::cmdline::getoptions SEARCH_TEXT $CMDLINE(search_options) $CMDLINE(search_usage)]
+    } trap {CMDLINE USAGE} {msg o} {
+        puts $msg
+	    exit 1
+    }
+    set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
+    incr found
+    puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
+    puts "|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |"
+    puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
+    dict for {id info} [dict get $DB_DATA SCRIPTS_INDEX] {
+        dict with info {
+            if { 
+                [string match -nocase "*${SEARCH_TEXT}*" ${DESCRIPTION}] \
+                && ( [string match -nocase "all" ${params(c)}] || [string match -nocase ${params(c)} ${CATEGORY} ] )
+            } {
+                if { $found > $params(l) } { break }
+                set MSG     "| [FCT::SPACE:TEXT ${id} 6] "
+                append MSG  "| [FCT::SPACE:TEXT ${CODENAME} 14] "
+                append MSG  "| [FCT::SPACE:TEXT ${CODEVERS} 16] "
+                append MSG  "| [FCT::SPACE:TEXT ${CATEGORY} 14] "
+                append MSG  "| [FCT::SPACE:TEXT ${DESCRIPTION} 50] "
+                append MSG  "| [FCT::SPACE:TEXT ${SOURCENAME} 20] |"
+                puts $MSG
+                incr found
+            }
+        }
+    }
+    puts "*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*"
+    puts "| [FCT::SPACE:TEXT "Help: ${::argv0} List -help" 42] | [FCT::SPACE:TEXT "Category: ${params(c)}" 42] | [FCT::SPACE:TEXT "Limit: ${params(l)}" 44]  |"
     puts "*--------------------------------------------*--------------------------------------------*-----------------------------------------------*"
     puts "* For more information on a script: ${::argv0} show <ID|Name>"
 }
@@ -523,6 +570,9 @@ proc ::TSM::COMMANDS::Help { args } {
         List  {
             ::TSM::COMMANDS::Help::List 1
         }
+        Search  {
+            ::TSM::COMMANDS::Help::Search 1
+        }
         GenDateNow  {
             ::TSM::COMMANDS::Help::GenDateNow 1
         }
@@ -537,8 +587,15 @@ proc ::TSM::COMMANDS::Help { args } {
 proc ::TSM::COMMANDS::Help::UpdateDB    { { FULL_DESCRIPTION 0 } } {
     puts "${::argv0} UpdateDB               - Update database list of available scripts"
 }
+proc ::TSM::COMMANDS::Help::Search    { { FULL_DESCRIPTION 0 } } {
+    puts "${::argv0} Search <search_string> - Search in scripts descriptions"
+    if { ${FULL_DESCRIPTION} } {
+        puts ""
+        puts [::cmdline::usage $::TSM::CMDLINE(search_options) $::TSM::CMDLINE(search_usage)]
+    }
+}
 proc ::TSM::COMMANDS::Help::List        { { FULL_DESCRIPTION 0 } } {
-    puts "${::argv0} List <search_string>   - List scripts based on script names"
+    puts "${::argv0} List   <search_string> - List scripts based on script names"
     if { ${FULL_DESCRIPTION} } {
         puts ""
         puts [::cmdline::usage $::TSM::CMDLINE(list_options) $::TSM::CMDLINE(list_usage)]
@@ -548,7 +605,7 @@ proc ::TSM::COMMANDS::Help::GenDateNow  { { FULL_DESCRIPTION 0 } } {
     puts "${::argv0} GenDateNow             - Generator date now with format '%a, %d %b %Y %H:%M:%S %Z'"
 }
 proc ::TSM::COMMANDS::Help::Show        { { FULL_DESCRIPTION 0 } } {
-    puts "${::argv0} Show <Num|Script_Name> - Show script details"
+    puts "${::argv0} Show        <Num|Name> - Show script details"
 }
 #########
 namespace eval ::TSM::COMMANDS::FCT {}
@@ -596,6 +653,9 @@ proc ::TSM::main { } {
         }
         Show  {
             ::TSM::COMMANDS::Show ${SUBCOMMANDS}
+        }
+        Search  {
+            ::TSM::COMMANDS::Search ${SUBCOMMANDS}
         }
         Help  {
             ::TSM::COMMANDS::Help ${SUBCOMMANDS}
