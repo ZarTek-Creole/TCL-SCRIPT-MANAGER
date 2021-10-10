@@ -16,6 +16,7 @@ Il est basé sur un système de "sources listes" contenant des catalogues de scr
 
 * Eggdrop
 * TCL
+* git
 
 ### TCL Packages
 
