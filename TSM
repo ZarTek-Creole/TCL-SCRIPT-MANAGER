@@ -627,10 +627,18 @@ proc ::TSM::COMMANDS::Install { args } {
     set DB_DATA     [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
     set SCRIPT_ID   [::TSM::FCT::SCRIPT:GET:ID ${args}]
     set SCRIPT_DATA [::TSM::FCT::SCRIPT:GET:VALUE ${SCRIPT_ID}]
-    puts $SCRIPT_DATA
-    with-path [GETCONFIG eggdrop installdir] {
-        run_exec git clone [GET:VALUE ${SCRIPT_DATA} GITURL] [GET:VALUE ${SCRIPT_DATA} CODENAME]
-        with-path [GET:VALUE ${SCRIPT_DATA} CODENAME] {
+    set SCRIPT_NAME [GET:VALUE ${SCRIPT_DATA} CODENAME]
+    set INSTALLDIR  [file normalize [GETCONFIG eggdrop installdir]]
+    
+    with-path ${INSTALLDIR} {
+        puts [exec ls]
+        if { [file isdirectory ${SCRIPT_NAME}] } {
+            puts "The directory '${INSTALLDIR}/${SCRIPT_NAME}' already exists!"
+            puts "Remove it or use ${::argv0} update ${SCRIPT_NAME} !";
+            exit 2
+        }
+        run_exec git clone [GET:VALUE ${SCRIPT_DATA} GITURL] ${SCRIPT_NAME}
+        with-path ${SCRIPT_NAME} {
             run_exec git fetch [GET:VALUE ${SCRIPT_DATA} GITURL] [GET:VALUE ${SCRIPT_DATA} GITREVISION]
             run_exec git checkout [GET:VALUE ${SCRIPT_DATA} GITREVISION]
             set commit [run_exec git rev-parse HEAD]

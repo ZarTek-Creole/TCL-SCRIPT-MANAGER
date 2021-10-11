@@ -220,4 +220,26 @@ Reading Config file from '/home/eggdrop/TSM.cfg'...
 * For more information on a script: ./TSM show <ID|Name>
 ```
 
+### Install
+
+```
+└> ./TSM install 1                                                              
+  _____ ___ __  __ 
+ |_   _/ __|  \/  |
+   | | \__ \ |\/| |
+   |_| |___/_|  |_|
+-TCL-SCRIPT-MANAGER-
+Reading Config file from '/home/eggdrop/TSM.cfg'...
+
+Cloning into 'mceggdrop'...
+remote: Enumerating objects: 46, done.
+remote: Total 46 (delta 0), reused 0 (delta 0), pack-reused 46
+Receiving objects: 100% (46/46), 70.59 KiB | 3.07 MiB/s, done.
+Resolving deltas: 100% (8/8), done.
+From https://github.com/MalaGaM/mceggdrop
+ * branch            master     -> FETCH_HEAD
+Already on 'master'
+5ef12880bcf422ebf6b5ebc3a311032c95c11d64
+```
+
 #
