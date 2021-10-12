@@ -77,6 +77,59 @@ namespace eval ::TSM {
 namespace eval ::TSM::FCT {
     namespace export * 
 }
+proc ::TSM::FCT::PKG-Load { PKG_NAME {PKG_VERS ""} } {
+    if { ${PKG_VERS} == "" && [catch { package require ${PKG_NAME} } ERR] } { 
+        ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} (${ERR})" 2
+    } elseif { ${PKG_VERS} != "" && [catch { package require ${PKG_NAME} ${PKG_VERS} } ERR] } { 
+        ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} ${PKG_VERS} (${ERR})" 2
+    }
+}
+proc ::TSM::FCT::File-Read-JSon2Dict { FILENAME } {
+    set FILE_DATA   [File-Read ${FILENAME}]
+    if { [catch {
+                    ::TSM::JSon::Valid ${FILENAME} ${FILE_DATA}
+    } ERROR_MSG] } { 
+        puts ${ERROR_MSG}; exit 1 
+    }
+    return [::json::json2dict ${FILE_DATA}];
+}
+
+proc ::TSM::FCT::File-Check-Permission { FILENAME {exit 0} } {
+    if { ![file isfile ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not an file." ${exit}; } 
+    if { ![file readable  ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not readable file. check perms" ${exit}; } 
+    return 1
+}
+
+proc ::TSM::FCT::File-Write {path content {binary 0} {right "w"}} {
+    set FILE_PIPE [open ${path} ${right}]
+    if { ${binary} } {
+        fconfigure ${FILE_PIPE} -translation binary
+    }
+    puts -nonewline ${FILE_PIPE} ${content}
+    close ${FILE_PIPE}
+}
+
+proc ::TSM::FCT::File-Read { FILENAME } {
+    set FILE_PIPE [open ${FILENAME} r]
+    set FILE_DATA [read ${FILE_PIPE}]
+    close ${FILE_PIPE}
+    return ${FILE_DATA}
+}
+proc ::TSM::FCT::Get-URL-JSon2Dict { URL } {
+    if { [string match https* ${URL}] } { ::http::register https 443 [list ::tls::socket -tls1 1 -autoservername 1] }
+    if { [catch {set URL_TOKEN [::http::geturl ${URL} -binary 1]} ERR_MSG] } {
+		return -code error "Get-URL-JSon2Dict ERROR: ${ERR_MSG} for '${URL}'."
+	}
+    set URL_DATA    [::http::data ${URL_TOKEN}];
+    ::http::cleanup ${URL_TOKEN}
+    if { [string match https* ${URL}] } { ::http::unregister https }
+    if { [catch { 
+                    ::TSM::JSon::Valid ${URL} ${URL_DATA}
+    } ERROR_MSG] } {
+        puts ${ERROR_MSG}; exit 1 
+    }
+    return [::json::json2dict ${URL_DATA}];
+}
 proc ::TSM::FCT::run_exec args {
     return [exec -ignorestderr -- {*}$args]
 }
@@ -196,7 +249,7 @@ proc ::TSM::Source::Get:FILENAME:Path {} {
     set SOURCE_LIST [list]
     foreach SOURCE_PATH ${SOURCE(PathList)} {
         set SOURCE_PATH [file normalize ${SOURCE_PATH}]
-        if { [file exists "${SOURCE_PATH}/sources.list"] && [::TSM::File::Check:Perms "${SOURCE_PATH}/sources.list"] } {
+        if { [file exists "${SOURCE_PATH}/sources.list"] && [File-Check-Permission "${SOURCE_PATH}/sources.list"] } {
             lappend SOURCE_LIST "${SOURCE_PATH}/sources.list"
         }
         if { [file isdirectory "${SOURCE_PATH}/sources.list.d"] } {
@@ -218,7 +271,9 @@ proc ::TSM::Source::Get:FILENAME:Path {} {
     set SOURCE(LIST) [lsort -unique ${SOURCE_LIST}]
 }
 #########
-namespace eval ::TSM::List {}
+namespace eval ::TSM::List {
+    namespace import -force ::TSM::FCT::*
+}
 proc ::TSM::List::Validator { SOURCE_LIST_DATA SOURCE_URI } {
     if { ![dict exists ${SOURCE_LIST_DATA} list] } { 
         ::TSM::Show::Error "Bad Source List file : No 'list' information in ${SOURCE_URI}" 0
@@ -237,11 +292,11 @@ proc ::TSM::List::Read {} {
     foreach SOURCE_URI ${SOURCE(LIST)} {
         puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
         if { [string match http* ${SOURCE_URI}] } {
-            set SOURCE_FILE_DATA [::TSM::URL::Read:json2dict ${SOURCE_URI}]
+            set SOURCE_FILE_DATA [Get-URL-JSon2Dict ${SOURCE_URI}]
             if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ![::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
             incr SOURCE(LIST_NUMBER)
-        } elseif { [::TSM::File::Check:Perms ${SOURCE_URI}] } {
-            set SOURCE_FILE_DATA    [::TSM::File::Read:json2dict ${SOURCE_URI}]
+        } elseif { [File-Check-Permission ${SOURCE_URI}] } {
+            set SOURCE_FILE_DATA    [File-Read-JSon2Dict ${SOURCE_URI}]
             if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ! [::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
             incr SOURCE(LIST_NUMBER)
         } else {
@@ -338,28 +393,6 @@ proc ::TSM::JSon::Valid { FILENAME JSON_DATA } {
     if { [catch { ::json::json2dict ${JSON_DATA} } ERR_MSG] } {
         return -code error "::TSM::JSon::Valid ERROR: The file '${FILENAME}' is not an correct format JSON FILE! (JSON ERROR FORMAT)"
   }
-    return 1
-}
-#########
-namespace eval ::TSM::File {}
-proc ::TSM::File::Read:json2dict { FILENAME } {
-    set FILE_DATA   [::TSM::File::Read:Data ${FILENAME}]
-    if { [catch {
-                    ::TSM::JSon::Valid ${FILENAME} ${FILE_DATA}
-    } ERROR_MSG] } { 
-        puts ${ERROR_MSG}; exit 1 
-    }
-    return [::json::json2dict ${FILE_DATA}];
-}
-proc ::TSM::File::Read:Data { FILENAME } {
-    set FILE_PIPE [open ${FILENAME} r]
-    set FILE_DATA [read ${FILE_PIPE}]
-    close ${FILE_PIPE}
-    return ${FILE_DATA}
-}
-proc ::TSM::File::Check:Perms { FILENAME {exit 0} } {
-    if { ![file isfile ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not an file." ${exit}; } 
-    if { ![file readable  ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not readable file. check perms" ${exit}; } 
     return 1
 }
 #########
@@ -468,7 +501,9 @@ proc ::TSM::DBSource::incr_value {args} {
     }
 }
 #########
-namespace eval ::TSM::Config {}
+namespace eval ::TSM::Config {
+    namespace import -force ::TSM::FCT::*
+}
 proc ::TSM::Config::Locate:FILENAME {} {
     variable ::TSM::CONFIG
     # Chargement unique (non en cascade)
@@ -493,35 +528,8 @@ proc ::TSM::Config::Load {} {
         return 
     }
     puts [format "Reading Config file from '%s'..." ${CONFIG(FilePath)}]
-    ::TSM::File::Check:Perms ${CONFIG(FilePath)}
-    set CONFIG(DATA) [::TSM::File::Read:json2dict ${CONFIG(FilePath)}]
-}
-#########
-namespace eval ::TSM::URL {}
-proc ::TSM::URL::Read:json2dict { URL } {
-    if { [string match https* ${URL}] } { ::http::register https 443 [list ::tls::socket -tls1 1 -autoservername 1] }
-    if { [catch {set URL_TOKEN [::http::geturl ${URL} -binary 1]} ERR_MSG] } {
-		return -code error "::TSM::URL::Read:json2dict ERROR: ${ERR_MSG} for '${URL}'."
-	}
-    set URL_DATA    [::http::data ${URL_TOKEN}];
-    ::http::cleanup ${URL_TOKEN}
-    if { [string match https* ${URL}] } { ::http::unregister https }
-    if { [catch { 
-                    ::TSM::JSon::Valid ${URL} ${URL_DATA}
-    } ERROR_MSG] } {
-        puts ${ERROR_MSG}; exit 1 
-    }
-    return [::json::json2dict ${URL_DATA}];
-}
-#########
-namespace eval ::TSM::PKG {}
-
-proc ::TSM::PKG::Load { PKG_NAME {PKG_VERS ""} } {
-    if { ${PKG_VERS} == "" && [catch { package require ${PKG_NAME} } ERR] } { 
-        ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} (${ERR})" 2
-    } elseif { ${PKG_VERS} != "" && [catch { package require ${PKG_NAME} ${PKG_VERS} } ERR] } { 
-        ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} ${PKG_VERS} (${ERR})" 2
-    }
+    File-Check-Permission ${CONFIG(FilePath)}
+    set CONFIG(DATA) [File-Read-JSon2Dict ${CONFIG(FilePath)}]
 }
 #########
 namespace eval ::TSM::COMMANDS {
@@ -631,7 +639,6 @@ proc ::TSM::COMMANDS::Install { args } {
     set INSTALLDIR  [file normalize [GETCONFIG eggdrop installdir]]
     
     with-path ${INSTALLDIR} {
-        puts [exec ls]
         if { [file isdirectory ${SCRIPT_NAME}] } {
             puts "The directory '${INSTALLDIR}/${SCRIPT_NAME}' already exists!"
             puts "Remove it or use ${::argv0} update ${SCRIPT_NAME} !";
@@ -806,11 +813,12 @@ proc ::TSM::main { } {
     }
 }
 proc ::TSM::Init {} {
-    ::TSM::PKG::Load Tcl 8.5
-    ::TSM::PKG::Load json
-    ::TSM::PKG::Load http
-    ::TSM::PKG::Load tls
-    ::TSM::PKG::Load cmdline 1.5
+    namespace import -force ::TSM::FCT::*
+    PKG-Load Tcl 8.5
+    PKG-Load json
+    PKG-Load http
+    PKG-Load tls
+    PKG-Load cmdline 1.5
     ::TSM::Show::Banner
     ::TSM::Config::Load
     ::TSM::Config::Check
