@@ -6,6 +6,23 @@
   },
   "scripts": [
     {
+      "name": "woobie",
+      "category": "test",
+      "description": "woobie script for test",
+      "version": "1.0",
+      "author": "astrorigin",
+      "documentation": "https://github.com/astrorigin/woobie.tcl/blob/master/README.rst",
+      "giturl": "https://github.com/astrorigin/woobie.tcl",
+      "gitrevision": "master",
+      "troubleshooting": "https://github.com/astrorigin/woobie.tcl/issues",
+      "mineggdropversion": null,
+      "mintclversion": null,
+      "packagesrequire": [],
+      "postinstalltext": [
+        "Read https://github.com/astrorigin/woobie.tcl/blob/master/README.rst"
+      ]
+    },
+    {
       "name": "mceggdrop",
       "category": "FiSH",
       "description": "Mircryption (FiSH) for eggdrop.",
@@ -17,8 +34,7 @@
       "troubleshooting": "In case of problems, contact http://www.donationcoder.com/Software/Mouser/mircryption/others_eggdrop.php",
       "mineggdropversion": "1.8.4",
       "mintclversion": "8.5",
-      "packagesrequire": [
-      ],
+      "packagesrequire": [],
       "postinstalltext": [
         "1) Copy these files to your eggdrop/scripts/ directory.",
         "2) Add lines to your eggdrop .conf file, in the ##### SCRIPTS ##### category,",
@@ -43,10 +59,10 @@
       "mineggdropversion": "1.6.20",
       "mintclversion": "8.5",
       "packagesrequire": {
-          "tls": "1.7.11",
-          "http": "2.8.9",
-          "json": "1.3",
-          "clock::iso8601": "0.1"
+        "tls": "1.7.11",
+        "http": "2.8.9",
+        "json": "1.3",
+        "clock::iso8601": "0.1"
       },
       "postinstalltext": [
         "Read instruction on: https://github.com/MalaGaM/TCL-Youtube-Link/blob/main/README.md"
@@ -65,13 +81,13 @@
       "mineggdropversion": null,
       "mintclversion": null,
       "packagesrequire": {
-          "IRCServices": "0.0.1",
-          "sqlite3": null,
-          "http": null,
-          "json": null,
-          "dns": null,
-          "ip": null,
-          "tls": null
+        "IRCServices": "0.0.1",
+        "sqlite3": null,
+        "http": null,
+        "json": null,
+        "dns": null,
+        "ip": null,
+        "tls": null
       },
       "postinstalltext": [
         "Read instruction on: https://github.com/MalaGaM/TCL-PROXYCHECK/blob/main/README.md"
@@ -89,8 +105,7 @@
       "troubleshooting": "https://github.com/MalaGaM/TCL-EvaServ/issues/new",
       "mineggdropversion": null,
       "mintclversion": null,
-      "packagesrequire": {
-      },
+      "packagesrequire": {},
       "postinstalltext": [
         "Read instruction on: https://github.com/MalaGaM/TCL-EvaServ/blob/main/README.md"
       ]
@@ -167,8 +182,7 @@
       "troubleshooting": "https://github.com/MalaGaM/TCL-MOCKS/issues/new",
       "mineggdropversion": null,
       "mintclversion": null,
-      "packagesrequire": {
-      },
+      "packagesrequire": {},
       "postinstalltext": [
         "Read instruction on: https://github.com/MalaGaM/TCL-MOCKS/blob/main/README.md"
       ]
@@ -185,8 +199,7 @@
       "troubleshooting": "https://github.com/MalaGaM/TCL-BYPASS-WHO-BLOCKED/issues/new",
       "mineggdropversion": "1.6.20",
       "mintclversion": "8.5",
-      "packagesrequire": {
-      },
+      "packagesrequire": {},
       "postinstalltext": [
         "Read instruction on: https://github.com/MalaGaM/TCL-BYPASS-WHO-BLOCKED/blob/main/README.md"
       ]

@@ -33,7 +33,7 @@ namespace eval ::TSM {
         LNAME   "TCL-SCRIPT-MANAGER"
         VERSION "0.0.1"
     }
-
+    set SCRIPTS(RUN_IN_PATH) [file dirname [file normalize [info script]]]
     variable ::TSM::CONFIG
     array set CONFIG {
         FILENAME    "TSM.cfg"
@@ -41,6 +41,7 @@ namespace eval ::TSM {
     }
     set CONFIG(PathList)    [list           \
                                 [pwd]       \
+                                ${SCRIPTS(RUN_IN_PATH)} \
                                 [glob ~]    \
                                 "/etc/tsm"  \
                                 "/usr/etc"  \
@@ -49,6 +50,7 @@ namespace eval ::TSM {
     variable ::TSM::SOURCE
     set SOURCE(PathList)    [list               \
                                 [pwd]           \
+                                ${SCRIPTS(RUN_IN_PATH)} \
                                 [glob ~]        \
                                 "/etc/tsm"      \
                                 "/usr/etc/tsm" 
@@ -130,11 +132,11 @@ proc ::TSM::FCT::Get-URL-JSon2Dict { URL } {
     }
     return [::json::json2dict ${URL_DATA}];
 }
-proc ::TSM::FCT::run_exec args {
+proc ::TSM::FCT::RUN-EXEC args {
     return [exec -ignorestderr -- {*}$args]
 }
 # Run ${code} in the directory ${path}.
-proc ::TSM::FCT::with-path {path code} {
+proc ::TSM::FCT::RUN-IN-PATH {path code} {
     set prevPath [pwd]
     try {
         cd ${path}
@@ -143,15 +145,15 @@ proc ::TSM::FCT::with-path {path code} {
         cd ${prevPath}
     }
 }
-proc ::TSM::FCT::SCRIPT:GET:VALUE { SCRIPT_ID } {
+proc ::TSM::FCT::SCRIPT-GET-VALUE { SCRIPT_ID } {
     variable ::TSM::DBSource
     set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
     if { [string is entier ${SCRIPT_ID}] && ![dict exists ${DB_DATA} SCRIPTS_INDEX ${SCRIPT_ID}] } {
         return -1
     }
-    return [dict get ${DB_DATA} SCRIPTS_INDEX $SCRIPT_ID]
+    return [VALUE-GET ${DB_DATA} SCRIPTS_INDEX $SCRIPT_ID]
 }
-proc ::TSM::FCT::SCRIPT:GET:ID { Value } {
+proc ::TSM::FCT::SCRIPT-GET-ID { Value } {
     variable ::TSM::DBSource
     set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
     set found 1
@@ -159,7 +161,7 @@ proc ::TSM::FCT::SCRIPT:GET:ID { Value } {
         return -1
     } elseif { ![string is entier ${Value}] } {
         set found 0
-        dict for {id info} [dict get ${DB_DATA} SCRIPTS_INDEX] {
+        dict for {id info} [VALUE-GET ${DB_DATA} SCRIPTS_INDEX] {
             dict with info {
                 if { [string match -nocase ${Value} ${CODENAME}] } {
                     return ${id}
@@ -173,35 +175,13 @@ proc ::TSM::FCT::SCRIPT:GET:ID { Value } {
         return ${Value}
     }
 }
-proc ::TSM::FCT::VALUE:DEFAULT { Value {default NONE} } {
+proc ::TSM::FCT::VALUE-DEFAULT { Value {default NONE} } {
     return [expr { ${Value} ne "" ? ${Value} : ${default} }]
 }
-proc ::TSM::FCT::VALUE:DEFAULT:REVERSE { Value {default NONE} } {
+proc ::TSM::FCT::VALUE-DEFAULT-REVERSE { Value {default NONE} } {
     if { [llength ${Value}] == 0 } { return ${default} }
 }
-proc ::TSM::FCT::SPACE:TEXT { text length } {
-	set text			[string trim $text]
-    set text_length		[string length $text]
-    if { [expr {$text_length % 2}] } { 
-        set text_length		[expr [string length $text]+1]
-        set text            "$text "
-    }
-	
-	# si le $text est plus grand que $length on le retourne on le coupe avec deux points
-	if { $text_length > $length } { set text "[string range $text 0 [expr $length-3]].." }
-	# si le text a une longueur impair, on rajoute un space derriere
-	if { [expr {($text_length % 2) != 0}] } { set text " $text" }
-	
-	set espace_length	[expr ($length - $text_length)/2]
-	set espace			[string repeat " " $espace_length]; 
-	return $espace$text$espace 
-}
-
-proc ::TSM::FCT::GETCONFIG { key {subkey ""} {default NONE} } {
-    variable ::TSM::CONFIG
-    return [::TSM::FCT::GET:VALUE ${CONFIG(DATA)} $key $subkey $default]
-}
-proc ::TSM::FCT::GET:VALUE { DB key {subkey ""} {default NONE}} {
+proc ::TSM::FCT::VALUE-GET { DB key {subkey ""} {default NONE}} {
     if { [dict exists ${DB} ${key}] } {
         if { ${subkey} == "" } {
             return [dict get ${DB} ${key}];
@@ -220,6 +200,29 @@ proc ::TSM::FCT::GET:VALUE { DB key {subkey ""} {default NONE}} {
         error [list no key ${key} in config];
     }
 }
+proc ::TSM::FCT::TEXT-SPACE-SEP { text length } {
+	set text			[string trim $text]
+    set text_length		[string length $text]
+    if { [expr {$text_length % 2}] } { 
+        set text_length		[expr [string length $text]+1]
+        set text            "$text "
+    }
+	
+	# si le $text est plus grand que $length on le retourne on le coupe avec deux points
+	if { $text_length > $length } { set text "[string range $text 0 [expr $length-3]].." }
+	# si le text a une longueur impair, on rajoute un space derriere
+	if { [expr {($text_length % 2) != 0}] } { set text " $text" }
+	
+	set espace_length	[expr ($length - $text_length)/2]
+	set espace			[string repeat " " $espace_length]; 
+	return $espace$text$espace 
+}
+
+proc ::TSM::FCT::CONFIG-GET { key {subkey ""} {default NONE} } {
+    variable ::TSM::CONFIG
+    return [VALUE-GET ${CONFIG(DATA)} $key $subkey $default]
+}
+
 #########
 namespace eval ::TSM::Show {}
 proc ::TSM::Show::Banner {} {
@@ -244,6 +247,7 @@ proc ::TSM::Show::Error { ERR_MSG {exit 0} } {
 namespace eval ::TSM::Source {}
 proc ::TSM::Source::Get:FILENAME:Path {} {
     variable ::TSM::SOURCE
+    variable ::TSM::CONFIG
     namespace import -force ::TSM::FCT::*
     # Chargement en cascade
     set SOURCE_LIST [list]
@@ -261,11 +265,13 @@ proc ::TSM::Source::Get:FILENAME:Path {} {
         }
     }
     
-    foreach SOURCE_FILE [GETCONFIG sources] {
+    foreach SOURCE_FILE [CONFIG-GET sources] {
         if { [string match http* ${SOURCE_FILE}] } {
             lappend SOURCE_LIST ${SOURCE_FILE}
-        } else {
+        } elseif { [file exists ${SOURCE_FILE}] && [File-Check-Permission "${SOURCE_PATH}/sources.list"] } {
             lappend SOURCE_LIST [file normalize ${SOURCE_FILE}]
+        } else {
+            puts "ERROR BAD SOURCE LIST in ${CONFIG(FILENAME)} : '${SOURCE_FILE}' !"
         }
     }
     set SOURCE(LIST) [lsort -unique ${SOURCE_LIST}]
@@ -290,13 +296,14 @@ proc ::TSM::List::Read {} {
     set SOURCE(SCRIPT_NUMBER)   0
     set SOURCE(LIST_NUMBER)     0
     foreach SOURCE_URI ${SOURCE(LIST)} {
-        puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
         if { [string match http* ${SOURCE_URI}] } {
             set SOURCE_FILE_DATA [Get-URL-JSon2Dict ${SOURCE_URI}]
+            puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
             if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ![::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
             incr SOURCE(LIST_NUMBER)
         } elseif { [File-Check-Permission ${SOURCE_URI}] } {
             set SOURCE_FILE_DATA    [File-Read-JSon2Dict ${SOURCE_URI}]
+            puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
             if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ! [::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
             incr SOURCE(LIST_NUMBER)
         } else {
@@ -314,24 +321,24 @@ proc ::TSM::List::Get:Informations { LIST_DATA SOURCE_URI } {
     set LIST_CONTACT    ""
     set LIST_DATE       ""
     set SCRIPTS_CNT     0
-    if { [dict exists ${LIST_DATA} scripts] && [dict get ${LIST_DATA} scripts] == "" } { ::TSM::Show::Error "::TSM::List::Get:Informations ERROR: No scripts informations found in ${SOURCE_URI}. skipped!"; return 0 }
+    if { [dict exists ${LIST_DATA} scripts] && [VALUE-GET ${LIST_DATA} scripts] == "" } { ::TSM::Show::Error "::TSM::List::Get:Informations ERROR: No scripts informations found in ${SOURCE_URI}. skipped!"; return 0 }
     if { [dict exists ${LIST_DATA} list] } { 
-        set list    [dict get ${LIST_DATA} list]
+        set list    [VALUE-GET ${LIST_DATA} list]
         if { [dict exists ${list} name] }       { 
-            set LIST_NAME [dict get ${list} name] 
+            set LIST_NAME [VALUE-GET ${list} name] 
             if { [::TSM::DBSource::exists ${LIST_NAME}] } {
                 ::TSM::Show::Error "::TSM::List::Get:Informations ERROR: Duplicata source '${SOURCE_URI}' with '[::TSM::DBSource::get_data ${LIST_NAME} source]', skipped!"; return 0
             }
         }
-        if { [dict exists ${list} contact] }    { set LIST_CONTACT [dict get ${list} contact] }
-        if { [dict exists ${list} updateat] }   { set LIST_DATE [dict get ${list} updateat] }
+        if { [dict exists ${list} contact] }    { set LIST_CONTACT [VALUE-GET ${list} contact] }
+        if { [dict exists ${list} updateat] }   { set LIST_DATE [VALUE-GET ${list} updateat] }
         
             dict set DBSource ${LIST_NAME} updateat ${LIST_DATE}
             dict set DBSource ${LIST_NAME} contact ${LIST_CONTACT}
             dict set DBSource ${LIST_NAME} source ${SOURCE_URI}
     } else { ::TSM::Show::Error "::TSM::List::Get:Informations ERROR: No List informations found in ${SOURCE_URI}"; return 0 }
     if { [dict exists ${LIST_DATA} scripts] } { 
-        set SCRIPTS_LIST            [dict get ${LIST_DATA} scripts]
+        set SCRIPTS_LIST            [VALUE-GET ${LIST_DATA} scripts]
         foreach SCRIPT_DATA ${SCRIPTS_LIST} { 
             set SCRIPT_NAME             ""
             set SCRIPT_CATEGORY         ""
@@ -346,20 +353,20 @@ proc ::TSM::List::Get:Informations { LIST_DATA SOURCE_URI } {
             set SCRIPT_MIN_VERS_TCL     NONE
             set SCRIPT_PKG_REQUIRE      NONE
             set SCRIPT_POST_INSTALL     NONE
-            if { [dict exists ${SCRIPT_DATA} name] }                { set SCRIPT_NAME               [dict get ${SCRIPT_DATA} name] }
+            if { [dict exists ${SCRIPT_DATA} name] }                { set SCRIPT_NAME               [VALUE-GET ${SCRIPT_DATA} name] }
             if { ${SCRIPT_NAME} == "" } { continue }
-            if { [dict exists ${SCRIPT_DATA} category] }            { set SCRIPT_CATEGORY           [dict get ${SCRIPT_DATA} category] }
-            if { [dict exists ${SCRIPT_DATA} description] }         { set SCRIPT_DESCRIPTION        [dict get ${SCRIPT_DATA} description] }
-            if { [dict exists ${SCRIPT_DATA} version] }             { set SCRIPT_VERSION            [dict get ${SCRIPT_DATA} version] }
-            if { [dict exists ${SCRIPT_DATA} author] }              { set SCRIPT_AUTHOR             [dict get ${SCRIPT_DATA} author] }
-            if { [dict exists ${SCRIPT_DATA} documentation] }       { set SCRIPT_DOCS               [dict get ${SCRIPT_DATA} documentation] }
-            if { [dict exists ${SCRIPT_DATA} giturl] }              { set SCRIPT_GITURL             [dict get ${SCRIPT_DATA} giturl] }
-            if { [dict exists ${SCRIPT_DATA} gitrevision] }         { set SCRIPT_GITREVISION        [dict get ${SCRIPT_DATA} gitrevision] }
-            if { [dict exists ${SCRIPT_DATA} troubleshooting] }     { set SCRIPT_TROUBLESHOOTING    [dict get ${SCRIPT_DATA} troubleshooting] }
-            if { [dict exists ${SCRIPT_DATA} mineggdropversion] }   { set SCRIPT_MIN_VERS_EGG       [dict get ${SCRIPT_DATA} mineggdropversion] }
-            if { [dict exists ${SCRIPT_DATA} mintclversion] }       { set SCRIPT_MIN_VERS_TCL       [dict get ${SCRIPT_DATA} mintclversion] }
-            if { [dict exists ${SCRIPT_DATA} packagesrequire] }     { set SCRIPT_PKG_REQUIRE        [dict get ${SCRIPT_DATA} packagesrequire] }
-            if { [dict exists ${SCRIPT_DATA} postinstalltext] }     { set SCRIPT_POST_INSTALL       [dict get ${SCRIPT_DATA} postinstalltext] }
+            if { [dict exists ${SCRIPT_DATA} category] }            { set SCRIPT_CATEGORY           [VALUE-GET ${SCRIPT_DATA} category] }
+            if { [dict exists ${SCRIPT_DATA} description] }         { set SCRIPT_DESCRIPTION        [VALUE-GET ${SCRIPT_DATA} description] }
+            if { [dict exists ${SCRIPT_DATA} version] }             { set SCRIPT_VERSION            [VALUE-GET ${SCRIPT_DATA} version] }
+            if { [dict exists ${SCRIPT_DATA} author] }              { set SCRIPT_AUTHOR             [VALUE-GET ${SCRIPT_DATA} author] }
+            if { [dict exists ${SCRIPT_DATA} documentation] }       { set SCRIPT_DOCS               [VALUE-GET ${SCRIPT_DATA} documentation] }
+            if { [dict exists ${SCRIPT_DATA} giturl] }              { set SCRIPT_GITURL             [VALUE-GET ${SCRIPT_DATA} giturl] }
+            if { [dict exists ${SCRIPT_DATA} gitrevision] }         { set SCRIPT_GITREVISION        [VALUE-GET ${SCRIPT_DATA} gitrevision] }
+            if { [dict exists ${SCRIPT_DATA} troubleshooting] }     { set SCRIPT_TROUBLESHOOTING    [VALUE-GET ${SCRIPT_DATA} troubleshooting] }
+            if { [dict exists ${SCRIPT_DATA} mineggdropversion] }   { set SCRIPT_MIN_VERS_EGG       [VALUE-GET ${SCRIPT_DATA} mineggdropversion] }
+            if { [dict exists ${SCRIPT_DATA} mintclversion] }       { set SCRIPT_MIN_VERS_TCL       [VALUE-GET ${SCRIPT_DATA} mintclversion] }
+            if { [dict exists ${SCRIPT_DATA} packagesrequire] }     { set SCRIPT_PKG_REQUIRE        [VALUE-GET ${SCRIPT_DATA} packagesrequire] }
+            if { [dict exists ${SCRIPT_DATA} postinstalltext] }     { set SCRIPT_POST_INSTALL       [VALUE-GET ${SCRIPT_DATA} postinstalltext] }
             incr SOURCE(SCRIPT_NUMBER)
             incr SCRIPTS_CNT
             dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} SOURCENAME ${LIST_NAME}
@@ -397,10 +404,9 @@ proc ::TSM::JSon::Valid { FILENAME JSON_DATA } {
 }
 #########
     # https://boulets.eggdrop.fr/tcl/routines/tcl-toolbox-0033.html
-namespace eval ::TSM::DBSource {}
-###############################################################################
-### Crée une entrée dans la base de données.
-###############################################################################
+namespace eval ::TSM::DBSource {
+    namespace import -force ::TSM::FCT::*
+}
 
 ###############################################################################
 ### Supprime une catégorie et ses sous-catégories dans la base de données.
@@ -556,19 +562,19 @@ proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
     puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
     puts "|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |"
     puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
-    dict for {id info} [dict get ${DB_DATA} SCRIPTS_INDEX] {
+    dict for {id info} [VALUE-GET ${DB_DATA} SCRIPTS_INDEX] {
         dict with info {
             if { 
                 [string match -nocase "*${SEARCH_TEXT}*" ${CODENAME}] \
                 && ( [string match -nocase "all" ${params(c)}] || [string match -nocase ${params(c)} ${CATEGORY} ] )
             } {
                 if { ${found} >= ${params(l)} } { break }
-                set MSG     "| [SPACE:TEXT ${id} 6] "
-                append MSG  "| [SPACE:TEXT ${CODENAME} 14] "
-                append MSG  "| [SPACE:TEXT ${CODEVERS} 16] "
-                append MSG  "| [SPACE:TEXT ${CATEGORY} 14] "
-                append MSG  "| [SPACE:TEXT ${DESCRIPTION} 50] "
-                append MSG  "| [SPACE:TEXT ${SOURCENAME} 20] |"
+                set MSG     "| [TEXT-SPACE-SEP ${id} 6] "
+                append MSG  "| [TEXT-SPACE-SEP ${CODENAME} 14] "
+                append MSG  "| [TEXT-SPACE-SEP ${CODEVERS} 16] "
+                append MSG  "| [TEXT-SPACE-SEP ${CATEGORY} 14] "
+                append MSG  "| [TEXT-SPACE-SEP ${DESCRIPTION} 50] "
+                append MSG  "| [TEXT-SPACE-SEP ${SOURCENAME} 20] |"
                 puts ${MSG}
                 incr found
             }
@@ -580,7 +586,7 @@ proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
         puts "|    -   |       -        |        -         |       ALL      |                Nohting found ...                   |          ALL         |"
     }
     puts "*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*"
-    puts "| [SPACE:TEXT "Help: ${::argv0} List -help" 42] | [SPACE:TEXT "Category: ${params(c)}" 42] | [SPACE:TEXT "Limit: ${params(l)}" 44]  |"
+    puts "| [TEXT-SPACE-SEP "Help: ${::argv0} List -help" 42] | [TEXT-SPACE-SEP "Category: ${params(c)}" 42] | [TEXT-SPACE-SEP "Limit: ${params(l)}" 44]  |"
     puts "*--------------------------------------------*--------------------------------------------*-----------------------------------------------*"
     puts "* For more information on a script: ${::argv0} show <ID|Name>"
 }
@@ -598,19 +604,19 @@ proc ::TSM::COMMANDS::Search { SEARCH_TEXT } {
     puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
     puts "|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |"
     puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
-    dict for {id info} [dict get ${DB_DATA} SCRIPTS_INDEX] {
+    dict for {id info} [VALUE-GET ${DB_DATA} SCRIPTS_INDEX] {
         dict with info {
             if { 
                 [string match -nocase "*${SEARCH_TEXT}*" ${DESCRIPTION}] \
                 && ( [string match -nocase "all" ${params(c)}] || [string match -nocase ${params(c)} ${CATEGORY} ] )
             } {
                 if { ${found} >= ${params(l)} } { break }
-                set MSG     "| [SPACE:TEXT ${id} 6] "
-                append MSG  "| [SPACE:TEXT ${CODENAME} 14] "
-                append MSG  "| [SPACE:TEXT ${CODEVERS} 16] "
-                append MSG  "| [SPACE:TEXT ${CATEGORY} 14] "
-                append MSG  "| [SPACE:TEXT ${DESCRIPTION} 50] "
-                append MSG  "| [SPACE:TEXT ${SOURCENAME} 20] |"
+                set MSG     "| [TEXT-SPACE-SEP ${id} 6] "
+                append MSG  "| [TEXT-SPACE-SEP ${CODENAME} 14] "
+                append MSG  "| [TEXT-SPACE-SEP ${CODEVERS} 16] "
+                append MSG  "| [TEXT-SPACE-SEP ${CATEGORY} 14] "
+                append MSG  "| [TEXT-SPACE-SEP ${DESCRIPTION} 50] "
+                append MSG  "| [TEXT-SPACE-SEP ${SOURCENAME} 20] |"
                 puts ${MSG}
                 incr found
             }
@@ -620,12 +626,13 @@ proc ::TSM::COMMANDS::Search { SEARCH_TEXT } {
         puts "|    -   |       -        |        -         |       ALL      |                Nohting found ...                   |          ALL         |"
     }
     puts "*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*"
-    puts "| [SPACE:TEXT "Help: ${::argv0} List -help" 42] | [SPACE:TEXT "Category: ${params(c)}" 42] | [SPACE:TEXT "Limit: ${params(l)}" 44]  |"
+    puts "| [TEXT-SPACE-SEP "Help: ${::argv0} List -help" 42] | [TEXT-SPACE-SEP "Category: ${params(c)}" 42] | [TEXT-SPACE-SEP "Limit: ${params(l)}" 44]  |"
     puts "*--------------------------------------------*--------------------------------------------*-----------------------------------------------*"
     puts "* For more information on a script: ${::argv0} show <ID|Name>"
 }
 proc ::TSM::COMMANDS::Install { args } {
     variable ::TSM::CMDLINE
+    variable ::TSM::CONFIG
     try {
         array set params [::cmdline::getoptions args ${CMDLINE(install_options)} ${CMDLINE(install_usage)}]
     } trap {CMDLINE USAGE} {msg o} {
@@ -633,22 +640,25 @@ proc ::TSM::COMMANDS::Install { args } {
 	    exit 1
     }
     set DB_DATA     [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
-    set SCRIPT_ID   [::TSM::FCT::SCRIPT:GET:ID ${args}]
-    set SCRIPT_DATA [::TSM::FCT::SCRIPT:GET:VALUE ${SCRIPT_ID}]
-    set SCRIPT_NAME [GET:VALUE ${SCRIPT_DATA} CODENAME]
-    set INSTALLDIR  [file normalize [GETCONFIG eggdrop installdir]]
-    
-    with-path ${INSTALLDIR} {
+    set SCRIPT_ID   [SCRIPT-GET-ID ${args}]
+    set SCRIPT_DATA [SCRIPT-GET-VALUE ${SCRIPT_ID}]
+    set SCRIPT_NAME [VALUE-GET ${SCRIPT_DATA} CODENAME]
+    set INSTALLDIR  [file normalize [CONFIG-GET eggdrop installdir]]
+    if { ! [file exists ${INSTALLDIR}] } {
+        puts "The directory '${INSTALLDIR}' don't exist! : Create the directory or change the INSTALLDIR in ${CONFIG(FILENAME)}";
+        exit 2
+    }
+    RUN-IN-PATH ${INSTALLDIR} {
         if { [file isdirectory ${SCRIPT_NAME}] } {
             puts "The directory '${INSTALLDIR}/${SCRIPT_NAME}' already exists!"
             puts "Remove it or use ${::argv0} update ${SCRIPT_NAME} !";
             exit 2
         }
-        run_exec git clone [GET:VALUE ${SCRIPT_DATA} GITURL] ${SCRIPT_NAME}
-        with-path ${SCRIPT_NAME} {
-            run_exec git fetch [GET:VALUE ${SCRIPT_DATA} GITURL] [GET:VALUE ${SCRIPT_DATA} GITREVISION]
-            run_exec git checkout [GET:VALUE ${SCRIPT_DATA} GITREVISION]
-            set commit [run_exec git rev-parse HEAD]
+        RUN-EXEC git clone [VALUE-GET ${SCRIPT_DATA} GITURL] ${SCRIPT_NAME}
+        RUN-IN-PATH ${SCRIPT_NAME} {
+            RUN-EXEC git fetch [VALUE-GET ${SCRIPT_DATA} GITURL] [VALUE-GET ${SCRIPT_DATA} GITREVISION]
+            RUN-EXEC git checkout [VALUE-GET ${SCRIPT_DATA} GITREVISION]
+            set commit [RUN-EXEC git rev-parse HEAD]
         }
 
     }
@@ -664,7 +674,7 @@ proc ::TSM::COMMANDS::Show { STR_SEARCH } {
         ::TSM::Show::Error "${::argv0} Show: script ID '${STR_SEARCH}' no found" 2
     } elseif { ![string is entier ${STR_SEARCH}] } {
         set found 0
-        dict for {id info} [dict get ${DB_DATA} SCRIPTS_INDEX] {
+        dict for {id info} [VALUE-GET ${DB_DATA} SCRIPTS_INDEX] {
             dict with info {
                 if { [string match -nocase ${STR_SEARCH} ${CODENAME}] } {
                     set STR_SEARCH ${id}
@@ -677,38 +687,38 @@ proc ::TSM::COMMANDS::Show { STR_SEARCH } {
     if { ! ${found} } {
         ::TSM::Show::Error "${::argv0} Show: script Name '${STR_SEARCH}' no found" 2
     }
-    set SCRIPT_DATA [dict get ${DB_DATA} SCRIPTS_INDEX ${STR_SEARCH}]
+    set SCRIPT_DATA [VALUE-GET ${DB_DATA} SCRIPTS_INDEX ${STR_SEARCH}]
     dict with SCRIPT_DATA {
         puts ""
         puts "****** SOURCE INFORMATIONS ******"
         puts ""
-        puts "[SPACE:TEXT "NAME" 30]: [VALUE:DEFAULT ${SOURCENAME}]"
-        puts "[SPACE:TEXT "DATE" 30]: [VALUE:DEFAULT ${SOURCEDATE}]"
-        puts "[SPACE:TEXT "CONTACT" 30]: [VALUE:DEFAULT ${SOURCECONTACT}]"
+        puts "[TEXT-SPACE-SEP "NAME" 30]: [VALUE-DEFAULT ${SOURCENAME}]"
+        puts "[TEXT-SPACE-SEP "DATE" 30]: [VALUE-DEFAULT ${SOURCEDATE}]"
+        puts "[TEXT-SPACE-SEP "CONTACT" 30]: [VALUE-DEFAULT ${SOURCECONTACT}]"
         puts ""
         puts "****** SCRIPT INFORMATIONS ******"
         puts ""
-        puts "[SPACE:TEXT "ID" 30]: [VALUE:DEFAULT ${STR_SEARCH}]"
-        puts "[SPACE:TEXT "NAME" 30]: [VALUE:DEFAULT ${CODENAME}]"
-        puts "[SPACE:TEXT "VERSION" 30]: [VALUE:DEFAULT ${CODEVERS}]"
-        puts "[SPACE:TEXT "CATEGORY" 30]: [VALUE:DEFAULT ${CATEGORY}]"
-        puts "[SPACE:TEXT "DESCRIPTION" 30]: [VALUE:DEFAULT ${DESCRIPTION}]"
-        puts "[SPACE:TEXT "AUTHOR" 30]: [VALUE:DEFAULT ${AUTHOR}]"
-        puts "[SPACE:TEXT "GIT URL" 30]: [VALUE:DEFAULT ${GITURL}]"
-        puts "[SPACE:TEXT "GIT REVISION" 30]: [VALUE:DEFAULT ${GITREVISION}]"
-        puts "[SPACE:TEXT "TROUBLESHOOTING" 30]: [VALUE:DEFAULT ${TROUBLESHOOTING}]"
-        puts "[SPACE:TEXT "Minimum version for Eggdrop" 30]: [VALUE:DEFAULT ${MIN_VERS_EGG}]"
-        puts "[SPACE:TEXT "Minimum version for TCL" 30]: [VALUE:DEFAULT ${MIN_VERS_TCL}]"
+        puts "[TEXT-SPACE-SEP "ID" 30]: [VALUE-DEFAULT ${STR_SEARCH}]"
+        puts "[TEXT-SPACE-SEP "NAME" 30]: [VALUE-DEFAULT ${CODENAME}]"
+        puts "[TEXT-SPACE-SEP "VERSION" 30]: [VALUE-DEFAULT ${CODEVERS}]"
+        puts "[TEXT-SPACE-SEP "CATEGORY" 30]: [VALUE-DEFAULT ${CATEGORY}]"
+        puts "[TEXT-SPACE-SEP "DESCRIPTION" 30]: [VALUE-DEFAULT ${DESCRIPTION}]"
+        puts "[TEXT-SPACE-SEP "AUTHOR" 30]: [VALUE-DEFAULT ${AUTHOR}]"
+        puts "[TEXT-SPACE-SEP "GIT URL" 30]: [VALUE-DEFAULT ${GITURL}]"
+        puts "[TEXT-SPACE-SEP "GIT REVISION" 30]: [VALUE-DEFAULT ${GITREVISION}]"
+        puts "[TEXT-SPACE-SEP "TROUBLESHOOTING" 30]: [VALUE-DEFAULT ${TROUBLESHOOTING}]"
+        puts "[TEXT-SPACE-SEP "Minimum version for Eggdrop" 30]: [VALUE-DEFAULT ${MIN_VERS_EGG}]"
+        puts "[TEXT-SPACE-SEP "Minimum version for TCL" 30]: [VALUE-DEFAULT ${MIN_VERS_TCL}]"
         puts ""
         puts "****** Packages Required ******"
-        puts "[VALUE:DEFAULT:REVERSE ${PKG_REQUIRE}]"
+        puts "[VALUE-DEFAULT-REVERSE ${PKG_REQUIRE}]"
         
         dict for {PKG_NAME PKG_VERS} ${PKG_REQUIRE} {
-            puts "[SPACE:TEXT "${PKG_NAME}" 30]: [VALUE:DEFAULT ${PKG_VERS}]"
+            puts "[TEXT-SPACE-SEP "${PKG_NAME}" 30]: [VALUE-DEFAULT ${PKG_VERS}]"
         }
         puts ""
         puts "****** post-installation INFORMATIONS ******"
-        puts "[VALUE:DEFAULT:REVERSE ${POST_INSTALL}]"
+        puts "[VALUE-DEFAULT-REVERSE ${POST_INSTALL}]"
         foreach {INSTALL_TEXT} ${POST_INSTALL} {
             puts "      ${INSTALL_TEXT}"
         }
@@ -766,7 +776,7 @@ proc ::TSM::COMMANDS::Help::Main  { { FULL_DESCRIPTION 0 } } {
     puts "${::argv0} help       <parameter> - Show help for <parameter>"
 }
 proc ::TSM::COMMANDS::Help::Install  { { FULL_DESCRIPTION 0 } } {
-    puts "${::argv0} Install          <num> - Install script"
+    puts "${::argv0} Install     <Num|Name> - Install script"
        if { ${FULL_DESCRIPTION} } {
         puts ""
         puts [::cmdline::usage ${::TSM::CMDLINE(install_options)} ${::TSM::CMDLINE(install_usage)}]
