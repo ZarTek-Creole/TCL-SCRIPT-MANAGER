@@ -34,6 +34,7 @@ namespace eval ::TSM {
         VERSION "0.0.1"
     }
     set SCRIPTS(RUN_IN_PATH) [file dirname [file normalize [info script]]]
+    set SCRIPTS(DB) "${SCRIPTS(RUN_IN_PATH)}/${SCRIPTS(NAME)}.db"
     variable ::TSM::CONFIG
     array set CONFIG {
         FILENAME    "TSM.cfg"
@@ -86,6 +87,17 @@ proc ::TSM::FCT::PKG-Load { PKG_NAME {PKG_VERS ""} } {
         ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} ${PKG_VERS} (${ERR})" 2
     }
 }
+proc ::TSM::FCT::Git-Validator { GITURL BRANCH } {
+    set GIT_EXEC [list git ls-remote --heads ${GITURL} ${BRANCH} | grep ${BRANCH} >/dev/null ]
+    if { [catch {exec -ignorestderr -- {*}${GIT_EXEC}}] == 0} { return 1 }
+    return 0
+}
+proc ::TSM::FCT::Git-Get-Default-Branch { GITURL } {
+    if { [regexp {HEAD branch: (\w*)} [RUN-EXEC git remote show ${GITURL}] -> Branch] } {
+        return ${Branch}
+    }
+    return -1
+}
 proc ::TSM::FCT::File-Read-JSon2Dict { FILENAME } {
     set FILE_DATA   [File-Read ${FILENAME}]
     if { [catch {
@@ -96,9 +108,15 @@ proc ::TSM::FCT::File-Read-JSon2Dict { FILENAME } {
     return [::json::json2dict ${FILE_DATA}];
 }
 
-proc ::TSM::FCT::File-Check-Permission { FILENAME {exit 0} } {
-    if { ![file isfile ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not an file." ${exit}; } 
-    if { ![file readable  ${FILENAME}] } { ::TSM::Show::Error "'${FILENAME}' is not readable file. check perms" ${exit}; } 
+proc ::TSM::FCT::File-Check-Permission { FILENAME {exit 0} {silent 0} } {
+    if { ![file isfile ${FILENAME}] } { 
+        if {  ${silent} == 0 } { ::TSM::Show::Error "'${FILENAME}' is not an file." ${exit};  }
+        return 0
+    } 
+    if { ![file readable ${FILENAME}] } {
+        if {  ${silent} == 0 } { ::TSM::Show::Error "'${FILENAME}' is not readable file. check perms" ${exit}; }
+        return 0
+    } 
     return 1
 }
 
@@ -139,15 +157,18 @@ proc ::TSM::FCT::RUN-EXEC args {
 proc ::TSM::FCT::RUN-IN-PATH {path code} {
     set prevPath [pwd]
     try {
+        puts "Changing the current directory to '${path}'."
         cd ${path}
         uplevel 1 ${code}
     } finally {
+        puts "back to the directory '${prevPath}'"
         cd ${prevPath}
     }
 }
 proc ::TSM::FCT::SCRIPT-GET-VALUE { SCRIPT_ID } {
     variable ::TSM::DBSource
-    set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
+    variable ::TSM::SCRIPTS
+    set DB_DATA [::TSM::DBSource::restore ${SCRIPTS(DB)}]
     if { [string is entier ${SCRIPT_ID}] && ![dict exists ${DB_DATA} SCRIPTS_INDEX ${SCRIPT_ID}] } {
         return -1
     }
@@ -155,7 +176,8 @@ proc ::TSM::FCT::SCRIPT-GET-VALUE { SCRIPT_ID } {
 }
 proc ::TSM::FCT::SCRIPT-GET-ID { Value } {
     variable ::TSM::DBSource
-    set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
+    variable ::TSM::SCRIPTS
+    set DB_DATA [::TSM::DBSource::restore ${SCRIPTS(DB)}]
     set found 1
     if { [string is entier ${Value}] && ![dict exists ${DB_DATA} SCRIPTS_INDEX ${Value}] } {
         return -1
@@ -241,6 +263,7 @@ proc ::TSM::Show::Help {} {
 proc ::TSM::Show::Error { ERR_MSG {exit 0} } {
     puts "ERROR: ${ERR_MSG}"
     if { ${exit} != 0 } { exit ${exit} }
+    return ${exit}
  
 }
 #########
@@ -253,7 +276,7 @@ proc ::TSM::Source::Get:FILENAME:Path {} {
     set SOURCE_LIST [list]
     foreach SOURCE_PATH ${SOURCE(PathList)} {
         set SOURCE_PATH [file normalize ${SOURCE_PATH}]
-        if { [file exists "${SOURCE_PATH}/sources.list"] && [File-Check-Permission "${SOURCE_PATH}/sources.list"] } {
+        if { [file exists "${SOURCE_PATH}/sources.list"] && [File-Check-Permission "${SOURCE_PATH}/sources.list" 0 1] } {
             lappend SOURCE_LIST "${SOURCE_PATH}/sources.list"
         }
         if { [file isdirectory "${SOURCE_PATH}/sources.list.d"] } {
@@ -268,11 +291,9 @@ proc ::TSM::Source::Get:FILENAME:Path {} {
     foreach SOURCE_FILE [CONFIG-GET sources] {
         if { [string match http* ${SOURCE_FILE}] } {
             lappend SOURCE_LIST ${SOURCE_FILE}
-        } elseif { [file exists ${SOURCE_FILE}] && [File-Check-Permission "${SOURCE_PATH}/sources.list"] } {
+        } elseif { [file exists ${SOURCE_FILE}] && [File-Check-Permission "${SOURCE_PATH}/sources.list" 0 1] } {
             lappend SOURCE_LIST [file normalize ${SOURCE_FILE}]
-        } else {
-            puts "ERROR BAD SOURCE LIST in ${CONFIG(FILENAME)} : '${SOURCE_FILE}' !"
-        }
+        } 
     }
     set SOURCE(LIST) [lsort -unique ${SOURCE_LIST}]
 }
@@ -291,29 +312,6 @@ proc ::TSM::List::Validator { SOURCE_LIST_DATA SOURCE_URI } {
     }
     return 1
 }
-proc ::TSM::List::Read {} {
-    variable ::TSM::SOURCE
-    set SOURCE(SCRIPT_NUMBER)   0
-    set SOURCE(LIST_NUMBER)     0
-    foreach SOURCE_URI ${SOURCE(LIST)} {
-        if { [string match http* ${SOURCE_URI}] } {
-            set SOURCE_FILE_DATA [Get-URL-JSon2Dict ${SOURCE_URI}]
-            puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
-            if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ![::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
-            incr SOURCE(LIST_NUMBER)
-        } elseif { [File-Check-Permission ${SOURCE_URI}] } {
-            set SOURCE_FILE_DATA    [File-Read-JSon2Dict ${SOURCE_URI}]
-            puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
-            if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ! [::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
-            incr SOURCE(LIST_NUMBER)
-        } else {
-            ::TSM::Show::Error "::TSM::List::Read ERROR: The file '${SOURCE_URI}' can't read!" 0
-            continue
-        }
-    }
-    puts "Total lists '${SOURCE(LIST_NUMBER)}' withs scripts: '${SOURCE(SCRIPT_NUMBER)}'"
-    ::TSM::DBSource::save ${::TSM::SCRIPTS(NAME)}.db
-}
 proc ::TSM::List::Get:Informations { LIST_DATA SOURCE_URI } {
     variable ::TSM::SOURCE
     variable ::TSM::DBSource
@@ -321,6 +319,7 @@ proc ::TSM::List::Get:Informations { LIST_DATA SOURCE_URI } {
     set LIST_CONTACT    ""
     set LIST_DATE       ""
     set SCRIPTS_CNT     0
+    puts "Please be patient, it may take a while ..."
     if { [dict exists ${LIST_DATA} scripts] && [VALUE-GET ${LIST_DATA} scripts] == "" } { ::TSM::Show::Error "::TSM::List::Get:Informations ERROR: No scripts informations found in ${SOURCE_URI}. skipped!"; return 0 }
     if { [dict exists ${LIST_DATA} list] } { 
         set list    [VALUE-GET ${LIST_DATA} list]
@@ -346,7 +345,7 @@ proc ::TSM::List::Get:Informations { LIST_DATA SOURCE_URI } {
             set SCRIPT_VERSION          ""
             set SCRIPT_AUTHOR           ""
             set SCRIPT_GITURL           ""
-            set SCRIPT_GITREVISION      "master2"
+            set SCRIPT_GITREVISION      ""
             set SCRIPT_DOCS             NONE
             set SCRIPT_TROUBLESHOOTING  NONE
             set SCRIPT_MIN_VERS_EGG     NONE
@@ -367,8 +366,16 @@ proc ::TSM::List::Get:Informations { LIST_DATA SOURCE_URI } {
             if { [dict exists ${SCRIPT_DATA} mintclversion] }       { set SCRIPT_MIN_VERS_TCL       [VALUE-GET ${SCRIPT_DATA} mintclversion] }
             if { [dict exists ${SCRIPT_DATA} packagesrequire] }     { set SCRIPT_PKG_REQUIRE        [VALUE-GET ${SCRIPT_DATA} packagesrequire] }
             if { [dict exists ${SCRIPT_DATA} postinstalltext] }     { set SCRIPT_POST_INSTALL       [VALUE-GET ${SCRIPT_DATA} postinstalltext] }
+
+            # Control GIT VALIDE
+            if { [::TSM::FCT::Git-Validator ${SCRIPT_GITURL} ${SCRIPT_GITREVISION}] != 1 } {
+                puts "ERROR: Source list '${LIST_NAME}' have bad source URI/REVISION for '${SCRIPT_NAME}' ( ${SCRIPT_GITURL} / ${SCRIPT_GITREVISION} ) "
+                continue
+
+            }
             incr SOURCE(SCRIPT_NUMBER)
             incr SCRIPTS_CNT
+            #
             dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} SOURCENAME ${LIST_NAME}
             dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} SOURCEDATE ${LIST_DATE}
             dict set DBSource SCRIPTS_INDEX ${SCRIPTS_CNT} SOURCECONTACT ${LIST_CONTACT}
@@ -542,8 +549,30 @@ namespace eval ::TSM::COMMANDS {
     namespace import -force ::TSM::FCT::*
 }
 proc ::TSM::COMMANDS::UpdateDB {} {
+    variable ::TSM::SOURCE
+    variable ::TSM::SCRIPTS
     ::TSM::Source::Get:FILENAME:Path
-    ::TSM::List::Read
+    set SOURCE(SCRIPT_NUMBER)   0
+    set SOURCE(LIST_NUMBER)     0
+    foreach SOURCE_URI ${SOURCE(LIST)} {
+        if { [string match http* ${SOURCE_URI}] } {
+            set SOURCE_FILE_DATA [Get-URL-JSon2Dict ${SOURCE_URI}]
+            puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
+            if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ![::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
+            incr SOURCE(LIST_NUMBER)
+        } elseif { [File-Check-Permission ${SOURCE_URI}] } {
+            set SOURCE_FILE_DATA    [File-Read-JSon2Dict ${SOURCE_URI}]
+            puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
+            if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ! [::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
+            incr SOURCE(LIST_NUMBER)
+        } else {
+            ::TSM::Show::Error "::TSM::COMMANDS::UpdateDB ERROR: The file '${SOURCE_URI}' can't read!" 0
+            continue
+        }
+    }
+    puts "--------------------"
+    puts "Total lists '${SOURCE(LIST_NUMBER)}' withs scripts: '${SOURCE(SCRIPT_NUMBER)}'"
+    ::TSM::DBSource::save ${SCRIPTS(DB)}
 }
 proc ::TSM::COMMANDS::GenDateNow {} {
     puts "[clock format [clock seconds] -format "%a, %d %b %Y %H:%M:%S %Z" -gmt 1]"
@@ -551,13 +580,14 @@ proc ::TSM::COMMANDS::GenDateNow {} {
 proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
     variable ::TSM::DBSource
     variable ::TSM::CMDLINE
+    variable ::TSM::SCRIPTS
     try {
         array set params [::cmdline::getoptions SEARCH_TEXT ${CMDLINE(list_options)} ${CMDLINE(list_usage)}]
     } trap {CMDLINE USAGE} {msg o} {
         puts ${msg}
 	    exit 1
     }
-    set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
+    set DB_DATA [::TSM::DBSource::restore ${SCRIPTS(DB)}]
     set found 0
     puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
     puts "|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |"
@@ -593,13 +623,14 @@ proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
 proc ::TSM::COMMANDS::Search { SEARCH_TEXT } {
     variable ::TSM::DBSource
     variable ::TSM::CMDLINE
+    variable ::TSM::SCRIPTS
     try {
         array set params [::cmdline::getoptions SEARCH_TEXT ${CMDLINE(search_options)} ${CMDLINE(search_usage)}]
     } trap {CMDLINE USAGE} {msg o} {
         puts ${msg}
 	    exit 1
     }
-    set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
+    set DB_DATA [::TSM::DBSource::restore ${SCRIPTS(DB)}]
     set found 0
     puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
     puts "|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |"
@@ -633,17 +664,20 @@ proc ::TSM::COMMANDS::Search { SEARCH_TEXT } {
 proc ::TSM::COMMANDS::Install { args } {
     variable ::TSM::CMDLINE
     variable ::TSM::CONFIG
+    variable ::TSM::SCRIPTS
     try {
         array set params [::cmdline::getoptions args ${CMDLINE(install_options)} ${CMDLINE(install_usage)}]
     } trap {CMDLINE USAGE} {msg o} {
         puts ${msg}
 	    exit 1
     }
-    set DB_DATA     [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
-    set SCRIPT_ID   [SCRIPT-GET-ID ${args}]
-    set SCRIPT_DATA [SCRIPT-GET-VALUE ${SCRIPT_ID}]
-    set SCRIPT_NAME [VALUE-GET ${SCRIPT_DATA} CODENAME]
-    set INSTALLDIR  [file normalize [CONFIG-GET eggdrop installdir]]
+    set DB_DATA         [::TSM::DBSource::restore ${SCRIPTS(DB)}]
+    set SCRIPT_ID       [SCRIPT-GET-ID ${args}]
+    set SCRIPT_DATA     [SCRIPT-GET-VALUE ${SCRIPT_ID}]
+    set SCRIPT_NAME     [VALUE-GET ${SCRIPT_DATA} CODENAME]
+    set SCRIPT_VERS     [VALUE-GET ${SCRIPT_DATA} CODEVERS]
+    set SCRIPT_GITURL   [VALUE-GET ${SCRIPT_DATA} GITURL]
+    set INSTALLDIR      [file normalize [CONFIG-GET eggdrop installdir]]
     if { ! [file exists ${INSTALLDIR}] } {
         puts "The directory '${INSTALLDIR}' don't exist! : Create the directory or change the INSTALLDIR in ${CONFIG(FILENAME)}";
         exit 2
@@ -654,21 +688,25 @@ proc ::TSM::COMMANDS::Install { args } {
             puts "Remove it or use ${::argv0} update ${SCRIPT_NAME} !";
             exit 2
         }
-        RUN-EXEC git clone [VALUE-GET ${SCRIPT_DATA} GITURL] ${SCRIPT_NAME}
+        puts "Get script source from '${SCRIPT_GITURL}' into '${INSTALLDIR}/${SCRIPT_NAME}'."
+        RUN-EXEC git clone ${SCRIPT_GITURL} ${SCRIPT_NAME}
         RUN-IN-PATH ${SCRIPT_NAME} {
-            RUN-EXEC git fetch [VALUE-GET ${SCRIPT_DATA} GITURL] [VALUE-GET ${SCRIPT_DATA} GITREVISION]
+            RUN-EXEC git fetch ${SCRIPT_GITURL} [VALUE-GET ${SCRIPT_DATA} GITREVISION]
             RUN-EXEC git checkout [VALUE-GET ${SCRIPT_DATA} GITREVISION]
             set commit [RUN-EXEC git rev-parse HEAD]
+            File-Write git-commit ${commit}
         }
+        File-Write .TSM "${SCRIPT_NAME} ${commit}"
 
     }
-    puts $commit
-
+    puts "Commit: $commit"
+    File-Write "${SCRIPTS(RUN_IN_PATH)}/.TSM" "${SCRIPT_NAME} ${commit} ${SCRIPT_VERS} ${INSTALLDIR}/${SCRIPT_NAME}"
 
 }    
 proc ::TSM::COMMANDS::Show { STR_SEARCH } {
     variable ::TSM::DBSource
-    set DB_DATA [::TSM::DBSource::restore ${::TSM::SCRIPTS(NAME)}.db]
+    variable ::TSM::SCRIPTS
+    set DB_DATA [::TSM::DBSource::restore ${SCRIPTS(DB)}]
     set found 1
     if { [string is entier ${STR_SEARCH}] && ![dict exists ${DB_DATA} SCRIPTS_INDEX ${STR_SEARCH}] } {
         ::TSM::Show::Error "${::argv0} Show: script ID '${STR_SEARCH}' no found" 2
@@ -834,3 +872,4 @@ proc ::TSM::Init {} {
     ::TSM::Config::Check
 }
 ::TSM::main
+#puts [::TSM::FCT::Git-Get-Default-Branch "https://github.com/MalaGaM/TCL-Youtube-Link"]
