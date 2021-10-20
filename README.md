@@ -34,37 +34,42 @@ Il est basé sur un système de "sources listes" contenant des catalogues de scr
 
 ```
 └> ./TSM
+Reading Config file from '/home/eggdrop/TSM.cfg'...
   _____ ___ __  __ 
  |_   _/ __|  \/  |
    | | \__ \ |\/| |
    |_| |___/_|  |_|
 -TCL-SCRIPT-MANAGER-
-Reading Config file from '/home/eggdrop/TSM.cfg'...
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
 This script expects a parameter. Use:
 ./TSM UpdateDB               - Update database list of available scripts
-./TSM List <search_string>   - List scripts based on script names
-./TSM Show <Num|Script_Name> - Show script details
+./TSM List   <search_string> - List scripts based on script names
+./TSM Search <search_string> - Search in scripts descriptions
+./TSM Show        <Num|Name> - Show script details
+./TSM Install     <Num|Name> - Install script
 ./TSM GenDateNow             - Generator date now with format '%a, %d %b %Y %H:%M:%S %Z'
-./TSM help <parameter>       - Show help for <parameter>
+./TSM help       <parameter> - Show help for <parameter>
 ```
 
 ### UpdateDB
 
 ```
 └> ./TSM UpdateDB
+Reading Config file from '/home/eggdrop/TSM.cfg'...
   _____ ___ __  __ 
  |_   _/ __|  \/  |
    | | \__ \ |\/| |
    |_| |___/_|  |_|
 -TCL-SCRIPT-MANAGER-
-Reading Config file from '/home/eggdrop/TSM.cfg'...
-Reading Source file from '/home/eggdrop/sources.list'...
-Informations list: 'MalaGaM public Scripts List' by 'https://github.com/MalaGaM' with '10' scripts Last update: 'Mon, 04 Oct 2021 15:21:19 GMT'
-Reading Source file from '/home/eggdrop/sources.list.d/CrazyCat.list'...
-ERROR: ::TSM::List::Get:Informations ERROR: No scripts informations found in /home/eggdrop/sources.list.d/CrazyCat.list. skipped!
-Reading Source file from '/home/eggdrop/sources.list.d/MenzAgitat.list'...
-ERROR: ::TSM::List::Get:Informations ERROR: No scripts informations found in /home/eggdrop/sources.list.d/MenzAgitat.list. skipped!
-Total lists '1' withs scripts: '10'
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
+Checking script repository from '/home/eggdrop/sources.list'... Please be patient, it may take a while ...
+Informations list: 'ZarTek public Scripts List' by 'https://github.com/ZarTek-Creole' with '11' scripts Last update: 'Mon, 04 Oct 2021 15:21:19 GMT'
+--------------------
+Total lists '1' withs scripts: '11'
 ```
 
 ### list
@@ -73,39 +78,50 @@ Total lists '1' withs scripts: '10'
 
 ```
 ./TSM List
+Reading Config file from '/home/eggdrop/TSM.cfg'...
   _____ ___ __  __ 
  |_   _/ __|  \/  |
    | | \__ \ |\/| |
    |_| |___/_|  |_|
 -TCL-SCRIPT-MANAGER-
-Reading Config file from '/home/eggdrop/TSM.cfg'...
-*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*
-|   id   |      Name      |     version      |    Category    |                    descripstion                    |         repo         |
-*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*
-|   1    |   mceggdrop    |     1.00.30      |      FiSH      |          Mircryption (FiSH) for eggdrop.           | MalaGaM public Scr.. |
-|   2    |  Youtube-Link  |      2.6.2       |      API       | This script retrieves information about Youtube .. | MalaGaM public Scr.. |
-|   3    |   PROXYCHECK   |   1.1.20210521   |    Services    |              Check Proxxy on connect               | MalaGaM public Scr.. |
-|   4    |    EvaServ     |      1.5RC       |    Services    |                  Services IRC Eva                  | MalaGaM public Scr.. |
-|   5    | DictionaryAPI  |      1.2.4       |      API       | TCL script for eggdrop that uses Dictionary v2 A.. | MalaGaM public Scr.. |
-*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*
-|           Help: ./TSM List -help           |               Category: all                |                   Limit: 5                    |
-*--------------------------------------------*--------------------------------------------*-----------------------------------------------*
-* For more information on a script: ./TSM show <id>
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
+*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*------------*
+|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |   STATUS   |
+*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*------------*
+|   1    |     woobie     |       1.1        |      test      |               woobie script for test               | ZarTek public Scr.. |    I U     |
+|   2    |   mceggdrop    |     1.00.30      |      FiSH      |          Mircryption (FiSH) for eggdrop.           | ZarTek public Scr.. |     I      |
+|   3    |  Youtube-Link  |      2.6.2       |      API       | This script retrieves information about Youtube .. | ZarTek public Scr.. |     I      |
+|   4    |   PROXYCHECK   |   1.1.20210521   |    Services    |              Check Proxxy on connect               | ZarTek public Scr.. |     A      |
+|   5    |    EvaServ     |      1.5RC       |    Services    |                  Services IRC Eva                  | ZarTek public Scr.. |     A      |
+|   6    | DictionaryAPI  |      1.2.4       |      API       | That uses Dictionary v2 API to find and get word.. | ZarTek public Scr.. |     A      |
+|   7    |  IRCServices   |      0.0.4       |    Packages    | Create an interface in TCL and the connection of.. | ZarTek public Scr.. |     A      |
+|   8    |   ClaraServ    |   1.1.20210404   |    Services    |  Trade show animation, Network help, User profile  | ZarTek public Scr.. |     A      |
+|   9    |     MOCKS      |       1.0        |     Tools      | Manage 'My Own soCKs Server' with eggdrop bot ( .. | ZarTek public Scr.. |     A      |
+|   10   | BYPASS-WHO-B.. |       1.0        |     Tools      | This script allows created false user responses .. | ZarTek public Scr.. |     A      |
+*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*------------*
+|           Help: ./TSM List -help           |               Category: all                |                         Limit: 10                          |
+*--------------------------------------------*--------------------------------------------*------------------------------------------------------------*
+* For more information on a script: ./TSM show <ID|Name>
 ```
 
 #### help
 
 ```
 └> ./TSM List -help
+Reading Config file from '/home/eggdrop/TSM.cfg'...
   _____ ___ __  __ 
  |_   _/ __|  \/  |
    | | \__ \ |\/| |
    |_| |___/_|  |_|
 -TCL-SCRIPT-MANAGER-
-Reading Config file from '/home/eggdrop/TSM.cfg'...
-TSM List [options] search_string ...
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
+TSM List [options] <search_string> ...
 options:
- -l value             set the limit to show <5>
+ -l value             set the limit to show <10>
  -c value             set category to find <all>
  --                   Forcibly stop option processing
  -help                Print this message
@@ -116,20 +132,23 @@ options:
 
 ```
  └> ./TSM list -c Services -l 2 serv
+ Reading Config file from '/home/eggdrop/TSM.cfg'...
   _____ ___ __  __ 
  |_   _/ __|  \/  |
    | | \__ \ |\/| |
    |_| |___/_|  |_|
 -TCL-SCRIPT-MANAGER-
-Reading Config file from '/home/eggdrop/TSM.cfg'...
-*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*
-|   id   |      Name      |     version      |    Category    |                    descripstion                    |         repo         |
-*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*
-|   4    |    EvaServ     |      1.5RC       |    Services    |                  Services IRC Eva                  | MalaGaM public Scr.. |
-|   7    |   ClaraServ    |   1.1.20210404   |    Services    | IRC services in TCL - Trade show animation, Netw.. | MalaGaM public Scr.. |
-*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*
-|           Help: ./TSM List -help           |             Category: Services             |                   Limit: 2                    |
-*--------------------------------------------*--------------------------------------------*-----------------------------------------------*
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
+*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*------------*
+|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |   STATUS   |
+*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*------------*
+|   5    |    EvaServ     |      1.5RC       |    Services    |                  Services IRC Eva                  | ZarTek public Scr.. |     A      |
+|   8    |   ClaraServ    |   1.1.20210404   |    Services    |  Trade show animation, Network help, User profile  | ZarTek public Scr.. |     A      |
+*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*------------*
+|           Help: ./TSM List -help           |             Category: Services             |                          Limit: 2                          |
+*--------------------------------------------*--------------------------------------------*------------------------------------------------------------*
 * For more information on a script: ./TSM show <ID|Name>
 ```
 
@@ -137,109 +156,184 @@ Reading Config file from '/home/eggdrop/TSM.cfg'...
 
 ```
 └> ./TSM show 4
+Reading Config file from '/home/eggdrop/TSM.cfg'...
   _____ ___ __  __ 
  |_   _/ __|  \/  |
    | | \__ \ |\/| |
    |_| |___/_|  |_|
 -TCL-SCRIPT-MANAGER-
-Reading Config file from '/home/eggdrop/TSM.cfg'...
-         SOURCE NAME          : MalaGaM public Scripts List
-         SOURCE DATE          : Mon, 04 Oct 2021 15:21:19 GMT
-        SOURCE CONTACT        : https://github.com/MalaGaM
-          SCRIPT ID           : 4
-         SCRIPT NAME          : EvaServ
-        SCRIPT VERSION        : 1.5RC
-       SCRIPT CATEGORY        : Services
-      SCRIPT DESCRIPTION      : Services IRC Eva
-        SCRIPT AUTHOR         : MalaGaM
-          SCRIPT URL          : https://github.com/MalaGaM/TCL-EvaServ
-       TROUBLESHOOTING        : https://github.com/MalaGaM/TCL-EvaServ/issues/new
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
+
+****** SOURCE INFORMATIONS ******
+
+             NAME             : ZarTek public Scripts List
+             DATE             : Mon, 04 Oct 2021 15:21:19 GMT
+           CONTACT            : https://github.com/ZarTek
+
+****** SCRIPT INFORMATIONS ******
+
+              ID              : 4
+             NAME             : PROXYCHECK
+           VERSION            : 1.1.20210521
+           CATEGORY           : Services
+         DESCRIPTION          : Check Proxxy on connect
+            AUTHOR            : ZarTek
+           GIT URL            : https://github.com/ZarTek/TCL-PROXYCHECK
+         GIT REVISION         : main
+       TROUBLESHOOTING        : https://github.com/ZarTek/TCL-PROXYCHECK/issues/new
  Minimum version for Eggdrop  : null
    Minimum version for TCL    : null
-      Required packages       : null
-Information post-installation : 
-      Read instruction on: https://github.com/MalaGaM/TCL-EvaServ/blob/main/README.md
+
+****** Packages Required ******
+
+         IRCServices          : 0.0.1
+           sqlite3            : null
+             http             : null
+             json             : null
+             dns              : null
+              ip              : null
+             tls              : null
+
+****** post-installation INFORMATIONS ******
+
+      Read instruction on: https://github.com/ZarTek/TCL-PROXYCHECK/blob/main/README.md
+
+*********************************
+
+
 
 
 └> ./TSM show ClaraServ 
+Reading Config file from '/home/eggdrop/TSM.cfg'...
   _____ ___ __  __ 
  |_   _/ __|  \/  |
    | | \__ \ |\/| |
    |_| |___/_|  |_|
 -TCL-SCRIPT-MANAGER-
-Reading Config file from '/home/eggdrop/TSM.cfg'...
-         SOURCE NAME          : MalaGaM public Scripts List
-         SOURCE DATE          : Mon, 04 Oct 2021 15:21:19 GMT
-        SOURCE CONTACT        : https://github.com/MalaGaM
-          SCRIPT ID           : 7
-         SCRIPT NAME          : ClaraServ
-        SCRIPT VERSION        : 1.1.20210404
-       SCRIPT CATEGORY        : Services
-      SCRIPT DESCRIPTION      : IRC services in TCL - Trade show animation, Network help, User profile
-        SCRIPT AUTHOR         : MalaGaM
-          SCRIPT URL          : https://github.com/MalaGaM/TCL-ClaraServ
-       TROUBLESHOOTING        : https://github.com/MalaGaM/TCL-ClaraServ/issues/new
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
+
+****** SOURCE INFORMATIONS ******
+
+             NAME             : ZarTek public Scripts List
+             DATE             : Mon, 04 Oct 2021 15:21:19 GMT
+           CONTACT            : https://github.com/ZarTek
+
+****** SCRIPT INFORMATIONS ******
+
+              ID              : 8
+             NAME             : ClaraServ
+           VERSION            : 1.1.20210404
+           CATEGORY           : Services
+         DESCRIPTION          : Trade show animation, Network help, User profile
+            AUTHOR            : ZarTek
+           GIT URL            : https://github.com/ZarTek/TCL-ClaraServ
+         GIT REVISION         : main
+       TROUBLESHOOTING        : https://github.com/ZarTek/TCL-ClaraServ/issues/new
  Minimum version for Eggdrop  : null
    Minimum version for TCL    : null
-      Required packages       : 
-                        Package Name:  IRCServices   - Minimum version: 0.0.1
-Information post-installation : 
-      Read instruction on: https://github.com/MalaGaM/TCL-ClaraServ/blob/main/README.md
+
+****** Packages Required ******
+
+         IRCServices          : 0.0.1
+
+****** post-installation INFORMATIONS ******
+
+      Read instruction on: https://github.com/ZarTek/TCL-ClaraServ/blob/main/README.md
+
+*********************************
 ```
 
 ### GenDateNow
 
 ```
-   └> ./TSM GenDateNow
+└> ./TSM GenDateNow
+Reading Config file from '/home/eggdrop/TSM.cfg'...
   _____ ___ __  __ 
  |_   _/ __|  \/  |
    | | \__ \ |\/| |
    |_| |___/_|  |_|
 -TCL-SCRIPT-MANAGER-
-Reading Config file from '/home/eggdrop/TSM.cfg'...
-Sat, 09 Oct 2021 17:04:38 GMT
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
+Wed, 20 Oct 2021 21:54:13 GMT
 ```
 
 ### Search
 
 ```
 └> ./TSM Search fish
+Reading Config file from '/home/eggdrop/TSM.cfg'...
   _____ ___ __  __ 
  |_   _/ __|  \/  |
    | | \__ \ |\/| |
    |_| |___/_|  |_|
 -TCL-SCRIPT-MANAGER-
-Reading Config file from '/home/eggdrop/TSM.cfg'...
-*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*
-|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |
-*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*
-|   1    |   mceggdrop    |     1.00.30      |      FiSH      |          Mircryption (FiSH) for eggdrop.           | MalaGaM public Scr.. |
-*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*
-|           Help: ./TSM List -help           |               Category: all                |                   Limit: 5                    |
-*--------------------------------------------*--------------------------------------------*-----------------------------------------------*
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
+*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*------------*
+|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |   STATUS   |
+*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*------------*
+|   2    |   mceggdrop    |     1.00.30      |      FiSH      |          Mircryption (FiSH) for eggdrop.           | ZarTek public Scr.. |     I      |
+*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*------------*
+|           Help: ./TSM List -help           |               Category: all                |                         Limit: 10                          |
+*--------------------------------------------*--------------------------------------------*------------------------------------------------------------*
 * For more information on a script: ./TSM show <ID|Name>
 ```
 
 ### Install
 
 ```
-└> ./TSM install 1                                                              
+└> ./TSM install 1                                                           
+Reading Config file from '/home/eggdrop/TSM.cfg'...
   _____ ___ __  __ 
  |_   _/ __|  \/  |
    | | \__ \ |\/| |
    |_| |___/_|  |_|
 -TCL-SCRIPT-MANAGER-
-Reading Config file from '/home/eggdrop/TSM.cfg'...
-
-Cloning into 'mceggdrop'...
-remote: Enumerating objects: 46, done.
-remote: Total 46 (delta 0), reused 0 (delta 0), pack-reused 46
-Receiving objects: 100% (46/46), 70.59 KiB | 3.07 MiB/s, done.
-Resolving deltas: 100% (8/8), done.
-From https://github.com/MalaGaM/mceggdrop
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
+Changing the current directory to '/home/eggdrop/scripts'.
+Get script source from 'https://github.com/astrorigin/woobie.tcl' into '/home/eggdrop/scripts/woobie'.
+Cloning into 'woobie'...
+remote: Enumerating objects: 11, done.
+remote: Counting objects: 100% (11/11), done.
+remote: Compressing objects: 100% (10/10), done.
+remote: Total 11 (delta 1), reused 11 (delta 1), pack-reused 0
+Receiving objects: 100% (11/11), done.
+Resolving deltas: 100% (1/1), done.
+Changing the current directory to 'woobie'.
+From https://github.com/astrorigin/woobie.tcl
  * branch            master     -> FETCH_HEAD
 Already on 'master'
-5ef12880bcf422ebf6b5ebc3a311032c95c11d64
+back to the directory '/home/eggdrop/scripts'
+back to the directory '/home/eggdrop/'
+Commit: 77c4278e03cb82b142e1467b02bfa6d6efcaf2de
+
+
+
+
+└> ./TSM install 1
+Reading Config file from '/home/eggdrop/TSM.cfg'...
+  _____ ___ __  __ 
+ |_   _/ __|  \/  |
+   | | \__ \ |\/| |
+   |_| |___/_|  |_|
+-TCL-SCRIPT-MANAGER-
+Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
+TCL        : 8.6
+--------------------
+Changing the current directory to '/home/eggdrop/scripts'.
+The directory '/home/eggdrop/scripts/woobie' already exists!
+Remove it or use ./TSM update woobie !
+
+
 ```
 
 #

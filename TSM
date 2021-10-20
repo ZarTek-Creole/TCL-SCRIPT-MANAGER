@@ -62,6 +62,57 @@ namespace eval ::TSM {
 namespace eval ::TSM::FCT {
     namespace export * 
 }
+proc ::TSM::FCT::SCRIPT-IS-INSTALLED { SCRIPT_NAME  } {
+    variable ::TSM::SCRIPTS
+    set FILE_DATA    [File-Read ${SCRIPTS(RUN_IN_PATH)}/.TSM]
+    foreach FILE_LINE [split ${FILE_DATA} "\n"] {
+        set FILE_SCRIPT_NAME    [lindex ${FILE_LINE} 0]    
+        if { [string match -nocase ${FILE_SCRIPT_NAME} ${SCRIPT_NAME}] } { return 1 }
+    }
+    return 0
+}
+proc ::TSM::FCT::SCRIPT-GET-VERSION-INSTALLED { SCRIPT_NAME  } {
+    variable ::TSM::SCRIPTS
+    set FILE_DATA    [File-Read "${SCRIPTS(RUN_IN_PATH)}/.TSM"]
+    foreach FILE_LINE [split ${FILE_DATA} "\n"] {
+        set FILE_SCRIPT_NAME    [lindex ${FILE_LINE} 0]    
+        if { [string match -nocase ${FILE_SCRIPT_NAME} ${SCRIPT_NAME}] } { 
+            set FILE_SCRIPT_VERS    [lindex ${FILE_LINE} 2]    
+            return $FILE_SCRIPT_VERS
+        }
+    }
+    return null
+}
+proc ::TSM::FCT::SCRIPT-GET-STATUS { SCRIPT_NAME SCRIPT_VERS MIN_VERS_EGG MIN_VERS_TCL } {
+    # SCRIPT-GET-STATUS ${CODENAME} ${MIN_VERS_EGG} ${MIN_VERS_TCL}
+    set STATUS  ""
+    # EGG
+    if { ![VERSION-CHECK ${::TSM::EGGDROP_VERSION} ${MIN_VERS_EGG}] } {
+        lappend STATUS  "E"
+    }
+    # TCL
+    if { ![VERSION-CHECK ${::TSM::TCL_VERSION} ${MIN_VERS_TCL}] } {
+        lappend STATUS  "T"
+    }
+    # INSTALLED
+    if { [SCRIPT-IS-INSTALLED ${SCRIPT_NAME}] } {
+        lappend STATUS  "I"
+        if { ![VERSION-CHECK [SCRIPT-GET-VERSION-INSTALLED ${SCRIPT_NAME}] ${SCRIPT_VERS}] } {
+            lappend STATUS  "U"
+        }
+    }
+
+    if { ${STATUS} == "" } { return A }
+    return ${STATUS}
+}
+proc ::TSM::FCT::VERSION-CHECK { CURVERS NEEDVERS } {
+    if { [string match -nocase "null" ${NEEDVERS}] } {
+        return 1
+    } elseif { [package vcompare ${CURVERS} ${NEEDVERS}] == "-1" } {
+        return  0
+    }
+    return 1
+}
 proc ::TSM::FCT::PKG-Load { PKG_NAME {PKG_VERS ""} } {
     if { ${PKG_VERS} == "" && [catch { package require ${PKG_NAME} } ERR] } { 
         ::TSM::Show::Error "ERROR: ${::argv0} need package ${PKG_NAME} (${ERR})" 2
@@ -107,7 +158,7 @@ proc ::TSM::FCT::File-Write {path content {binary 0} {right "w"}} {
     if { ${binary} } {
         fconfigure ${FILE_PIPE} -translation binary
     }
-    puts -nonewline ${FILE_PIPE} ${content}
+    puts -nonewline ${FILE_PIPE} "${content}\n"
     close ${FILE_PIPE}
 }
 
@@ -310,7 +361,6 @@ proc ::TSM::List::Get:Informations { LIST_DATA SOURCE_URI } {
     set LIST_CONTACT    ""
     set LIST_DATE       ""
     set SCRIPTS_CNT     0
-    puts "Please be patient, it may take a while ..."
     if { [dict exists ${LIST_DATA} scripts] && [VALUE-GET ${LIST_DATA} scripts] == "" } { ::TSM::Show::Error "::TSM::List::Get:Informations ERROR: No scripts informations found in ${SOURCE_URI}. skipped!"; return 0 }
     if { [dict exists ${LIST_DATA} list] } { 
         set list    [VALUE-GET ${LIST_DATA} list]
@@ -588,12 +638,12 @@ proc ::TSM::COMMANDS::UpdateDB {} {
     foreach SOURCE_URI ${SOURCE(LIST)} {
         if { [string match http* ${SOURCE_URI}] } {
             set SOURCE_FILE_DATA [Get-URL-JSon2Dict ${SOURCE_URI}]
-            puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
+            puts [format "Checking script repository from '%s'... Please be patient, it may take a while ..." ${SOURCE_URI}]
             if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ![::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
             incr SOURCE(LIST_NUMBER)
         } elseif { [File-Check-Permission ${SOURCE_URI}] } {
             set SOURCE_FILE_DATA    [File-Read-JSon2Dict ${SOURCE_URI}]
-            puts [format "Reading Source file from '%s'..." ${SOURCE_URI}]
+            puts [format "Checking script repository from '%s'... Please be patient, it may take a while ..." ${SOURCE_URI}]
             if { ! [::TSM::List::Validator ${SOURCE_FILE_DATA} ${SOURCE_URI}] || ! [::TSM::List::Get:Informations ${SOURCE_FILE_DATA} ${SOURCE_URI}] } { continue }
             incr SOURCE(LIST_NUMBER)
         } else {
@@ -609,24 +659,37 @@ proc ::TSM::COMMANDS::GenDateNow {} {
     puts "[clock format [clock seconds] -format "%a, %d %b %Y %H:%M:%S %Z" -gmt 1]"
 }
 proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
+    ::TSM::COMMANDS::FIND ${SEARCH_TEXT} "list"
+}
+proc ::TSM::COMMANDS::Search { SEARCH_TEXT } {
+    ::TSM::COMMANDS::FIND ${SEARCH_TEXT} "search"
+}
+proc ::TSM::COMMANDS::FIND { SEARCH_TEXT {TYPE "list"} } {
     variable ::TSM::DBSource
     variable ::TSM::CMDLINE
     variable ::TSM::SCRIPTS
+    if { [string match -nocase "list" ${TYPE}]} {
+        set TYPE "list"
+        set SEARCH_IN "\${CODENAME}"
+    } else {
+        set TYPE "search"
+        set SEARCH_IN "\${DESCRIPTION}"  
+    }
     try {
-        array set params [::cmdline::getoptions SEARCH_TEXT ${CMDLINE(list_options)} ${CMDLINE(list_usage)}]
+        array set params [::cmdline::getoptions SEARCH_TEXT [set CMDLINE([set TYPE]_options)] [set CMDLINE([set TYPE]_usage)]]
     } trap {CMDLINE USAGE} {msg o} {
         puts ${msg}
 	    exit 1
     }
     set DB_DATA [::TSM::DBSource::restore ${SCRIPTS(DB)}]
     set found 0
-    puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
-    puts "|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |"
-    puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
+    puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*------------*"
+    puts "|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |   STATUS   |"
+    puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*------------*"
     dict for {id info} [VALUE-GET ${DB_DATA} SCRIPTS_INDEX] {
         dict with info {
             if { 
-                [string match -nocase "*${SEARCH_TEXT}*" ${CODENAME}] \
+                [string match -nocase "*${SEARCH_TEXT}*" [subst ${SEARCH_IN}]] \
                 && ( [string match -nocase "all" ${params(c)}] || [string match -nocase ${params(c)} ${CATEGORY} ] )
             } {
                 if { ${found} >= ${params(l)} } { break }
@@ -635,61 +698,20 @@ proc ::TSM::COMMANDS::List { SEARCH_TEXT } {
                 append MSG  "| [TEXT-SPACE-SEP ${CODEVERS} 16] "
                 append MSG  "| [TEXT-SPACE-SEP ${CATEGORY} 14] "
                 append MSG  "| [TEXT-SPACE-SEP ${DESCRIPTION} 50] "
-                append MSG  "| [TEXT-SPACE-SEP ${SOURCENAME} 20] |"
+                append MSG  "| [TEXT-SPACE-SEP ${SOURCENAME} 20] "
+                append MSG  "| [TEXT-SPACE-SEP [SCRIPT-GET-STATUS ${CODENAME} ${CODEVERS} ${MIN_VERS_EGG} ${MIN_VERS_TCL}] 10] |"
                 puts ${MSG}
                 incr found
             }
-            
         }
 
     }
     if { $found == 0 } { 
         puts "|    -   |       -        |        -         |       ALL      |                Nohting found ...                   |          ALL         |"
     }
-    puts "*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*"
-    puts "| [TEXT-SPACE-SEP "Help: ${::argv0} List -help" 42] | [TEXT-SPACE-SEP "Category: ${params(c)}" 42] | [TEXT-SPACE-SEP "Limit: ${params(l)}" 44]  |"
-    puts "*--------------------------------------------*--------------------------------------------*-----------------------------------------------*"
-    puts "* For more information on a script: ${::argv0} show <ID|Name>"
-}
-proc ::TSM::COMMANDS::Search { SEARCH_TEXT } {
-    variable ::TSM::DBSource
-    variable ::TSM::CMDLINE
-    variable ::TSM::SCRIPTS
-    try {
-        array set params [::cmdline::getoptions SEARCH_TEXT ${CMDLINE(search_options)} ${CMDLINE(search_usage)}]
-    } trap {CMDLINE USAGE} {msg o} {
-        puts ${msg}
-	    exit 1
-    }
-    set DB_DATA [::TSM::DBSource::restore ${SCRIPTS(DB)}]
-    set found 0
-    puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
-    puts "|   ID   |      Name      |     version      |    Category    |                    Descripstion                    |         Repo         |"
-    puts "*--------*----------------*------------------*----------------*----------------------------------------------------*----------------------*"
-    dict for {id info} [VALUE-GET ${DB_DATA} SCRIPTS_INDEX] {
-        dict with info {
-            if { 
-                [string match -nocase "*${SEARCH_TEXT}*" ${DESCRIPTION}] \
-                && ( [string match -nocase "all" ${params(c)}] || [string match -nocase ${params(c)} ${CATEGORY} ] )
-            } {
-                if { ${found} >= ${params(l)} } { break }
-                set MSG     "| [TEXT-SPACE-SEP ${id} 6] "
-                append MSG  "| [TEXT-SPACE-SEP ${CODENAME} 14] "
-                append MSG  "| [TEXT-SPACE-SEP ${CODEVERS} 16] "
-                append MSG  "| [TEXT-SPACE-SEP ${CATEGORY} 14] "
-                append MSG  "| [TEXT-SPACE-SEP ${DESCRIPTION} 50] "
-                append MSG  "| [TEXT-SPACE-SEP ${SOURCENAME} 20] |"
-                puts ${MSG}
-                incr found
-            }
-        }
-    }
-    if { $found == 0 } { 
-        puts "|    -   |       -        |        -         |       ALL      |                Nohting found ...                   |          ALL         |"
-    }
-    puts "*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*"
-    puts "| [TEXT-SPACE-SEP "Help: ${::argv0} List -help" 42] | [TEXT-SPACE-SEP "Category: ${params(c)}" 42] | [TEXT-SPACE-SEP "Limit: ${params(l)}" 44]  |"
-    puts "*--------------------------------------------*--------------------------------------------*-----------------------------------------------*"
+    puts "*--------*----------------*------------------*----------------*---------------------------*------------------------*----------------------*------------*"
+    puts "| [TEXT-SPACE-SEP "Help: ${::argv0} List -help" 42] | [TEXT-SPACE-SEP "Category: ${params(c)}" 42] | [TEXT-SPACE-SEP "Limit: ${params(l)}" 58] |"
+    puts "*--------------------------------------------*--------------------------------------------*------------------------------------------------------------*"
     puts "* For more information on a script: ${::argv0} show <ID|Name>"
 }
 proc ::TSM::COMMANDS::Install { args } {
@@ -727,11 +749,13 @@ proc ::TSM::COMMANDS::Install { args } {
             set commit [RUN-EXEC git rev-parse HEAD]
             File-Write git-commit ${commit}
         }
+        # write in script dir info
         File-Write .TSM "${SCRIPT_NAME} ${commit}"
 
     }
     puts "Commit: $commit"
-    File-Write "${SCRIPTS(RUN_IN_PATH)}/.TSM" "${SCRIPT_NAME} ${commit} ${SCRIPT_VERS} ${INSTALLDIR}/${SCRIPT_NAME}"
+    # write in catalogue script info
+    File-Write "${SCRIPTS(RUN_IN_PATH)}/.TSM" "${SCRIPT_NAME} ${commit} ${SCRIPT_VERS} ${INSTALLDIR}/${SCRIPT_NAME}" 0 "a+"
 
 }    
 proc ::TSM::COMMANDS::Show { STR_SEARCH } {
