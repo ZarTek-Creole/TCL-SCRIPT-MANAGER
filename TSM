@@ -38,7 +38,6 @@ namespace eval ::TSM {
     variable ::TSM::CONFIG
     array set CONFIG {
         FILENAME    "TSM.cfg"
-        
     }
     set CONFIG(PathList)    [list           \
                                 [pwd]       \
@@ -57,23 +56,6 @@ namespace eval ::TSM {
                                 "/usr/etc/tsm" 
                             ];
 
-    variable ::TSM::CMDLINE
-    set CMDLINE(list_options) {
-        {l.arg  "5"     "set the limit to show"}
-        {c.arg  "all"   "set category to find"}
-    }
-    set CMDLINE(list_usage) "List \[options] <search_string> ...\noptions:"
-
-    set CMDLINE(search_options) {
-        {l.arg  "5"     "set the limit to show"}
-        {c.arg  "all"   "set category to find"}
-    }
-    set CMDLINE(search_usage) "Search \[options] <search_string> ...\noptions:"
-
-    set CMDLINE(install_options) {
-        {installdir.arg  ""     "set the installdir"}
-    }
-    set CMDLINE(install_usage) "Install \[options] <script_name> ...\noptions:"
 }
 
 #########
@@ -246,9 +228,18 @@ proc ::TSM::FCT::CONFIG-GET { key {subkey ""} {default NONE} } {
 }
 
 #########
-namespace eval ::TSM::Show {}
+namespace eval ::TSM::Show {
+
+}
 proc ::TSM::Show::Banner {} {
     puts "  _____ ___ __  __ \n |_   _/ __|  \\/  |\n   | | \\__ \\ |\\/| |\n   |_| |___/_|  |_|\n-TCL-SCRIPT-MANAGER-"
+}
+proc ::TSM::Show::Informations {} {
+    variable ::TSM::SOURCE
+    puts "Eggdrop    : ${::TSM::EGGDROP_VERSION} (${::TSM::INSTALLDIR})"
+    puts "TCL        : ${::TSM::TCL_VERSION}"
+    #puts "SCRIPTS DB : ${SOURCE(SCRIPT_NUMBER)}"
+    puts "--------------------"
 }
 proc ::TSM::Show::Help {} {
     puts "This script expects a parameter. Use:"
@@ -528,8 +519,48 @@ proc ::TSM::Config::Locate:FILENAME {} {
 proc ::TSM::Config::Check {} {
     variable ::TSM::CONFIG
     variable ::TSM::SOURCE
-    if { ![dict exists ${CONFIG(DATA)} sources] } { 
+    ### sources
+    if { ![dict exists ${CONFIG(DATA)} sources] } {  
         ::TSM::Show::Error "No sources list in '${CONFIG(FILENAME)}' file." 2;
+    }
+    ### eggdrop
+    if { ![dict exists ${CONFIG(DATA)} eggdrop] } { 
+        ::TSM::Show::Error "No key 'eggdrop' in '${CONFIG(FILENAME)}' file." 2;
+    } else {
+        ## eggdrop binary
+        if { ![dict exists ${CONFIG(DATA)} eggdrop binary] } { 
+            ::TSM::Show::Error "No value 'binary' for key 'eggdrop' in '${CONFIG(FILENAME)}' file." 2;
+        } else {
+            set eggdrop_path [file normalize [CONFIG-GET eggdrop binary]]
+            if { ![file executable ${eggdrop_path}] } { ::TSM::Show::Error "Value 'binary' for key 'eggdrop' in '${CONFIG(FILENAME)}' is not executable (${eggdrop_path}) file." 2; }
+            set ::TSM::EGGDROP_VERSION  [lindex [RUN-EXEC strings ${eggdrop_path} | grep EGG_STRINGVER] 1]
+            set ::TSM::TCL_VERSION      [lindex [RUN-EXEC strings ${eggdrop_path} | grep TCL_VERSION] 1]
+        }
+        ## eggdrop installdir
+        if { ![dict exists ${CONFIG(DATA)} eggdrop installdir] } { 
+            ::TSM::Show::Error "No value 'installdir' for key 'eggdrop' in '${CONFIG(FILENAME)}' file." 2;
+        } else {
+            set ::TSM::INSTALLDIR [file normalize [CONFIG-GET eggdrop installdir]]
+            if { ![file isdirectory ${::TSM::INSTALLDIR}] } { ::TSM::Show::Error "Value 'installdir' for key 'eggdrop' in '${CONFIG(FILENAME)}' is not an directory (${::TSM::INSTALLDIR}) file." 2; }
+        }
+    }
+    ### list
+    if { ![dict exists ${CONFIG(DATA)} list] } { 
+        ::TSM::Show::Error "No key 'list' in '${CONFIG(FILENAME)}' file." 2;
+    } else {
+        ## list limit
+        if { ![dict exists ${CONFIG(DATA)} list limit] } { 
+            ::TSM::Show::Error "No value 'limit' for key 'list' in '${CONFIG(FILENAME)}' file." 2;
+        }
+    }
+    ### search
+    if { ![dict exists ${CONFIG(DATA)} search] } { 
+        ::TSM::Show::Error "No key 'search' in '${CONFIG(FILENAME)}' file." 2;
+    } else {
+        ## search limit
+        if { ![dict exists ${CONFIG(DATA)} search limit] } { 
+            ::TSM::Show::Error "No value 'limit' for key 'search' in '${CONFIG(FILENAME)}' file." 2;
+        }
     }
 }
 proc ::TSM::Config::Load {} {
@@ -867,9 +898,29 @@ proc ::TSM::Init {} {
     PKG-Load http
     PKG-Load tls
     PKG-Load cmdline 1.5
-    ::TSM::Show::Banner
+    
     ::TSM::Config::Load
     ::TSM::Config::Check
+    ::TSM::Show::Banner
+    ::TSM::Show::Informations
+
+    variable ::TSM::CMDLINE
+    set CMDLINE(list_options)       [list  \
+                                        [list l.arg [CONFIG-GET list limit]     "set the limit to show"]    \
+                                        [list c.arg "all"                       "set category to find"]     \
+                                    ]
+    set CMDLINE(list_usage)         "List \[options] <search_string> ...\noptions:"
+
+    set CMDLINE(search_options)     [list  \
+                                        [list l.arg [CONFIG-GET search limit]   "set the limit to show"]    \
+                                        [list c.arg "all"                       "set category to find"]     \
+                                    ]
+    set CMDLINE(search_usage)       "Search \[options] <search_string> ...\noptions:"
+
+    set CMDLINE(install_options)    [list  \
+                                        [list installdir.arg  ${::TSM::INSTALLDIR}    "set the installdir"] \
+                                    ]
+    set CMDLINE(install_usage)      "Install \[options] <script_name> ...\noptions:"
+  
 }
 ::TSM::main
-#puts [::TSM::FCT::Git-Get-Default-Branch "https://github.com/MalaGaM/TCL-Youtube-Link"]
