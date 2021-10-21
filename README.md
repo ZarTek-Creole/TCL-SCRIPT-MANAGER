@@ -28,6 +28,22 @@ Il est basé sur un système de "sources listes" contenant des catalogues de scr
 
 #
 
+### Donation
+
+<https://github.com/ZarTek-Creole/DONATE>
+
+### Website
+
+<https://github.com/ZarTek-Creole/TCL-SCRIPT-MANAGER>
+
+### Support
+
+<https://github.com/ZarTek-Creole/TCL-SCRIPT-MANAGER/issues>
+
+### Docs
+
+<https://github.com/ZarTek-Creole/TCL-SCRIPT-MANAGER/wiki>
+
 ## Usage Example
 
 ### main
