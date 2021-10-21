@@ -62,6 +62,19 @@ namespace eval ::TSM {
 namespace eval ::TSM::FCT {
     namespace export * 
 }
+proc ::TSM::FCT::duration int_time {
+    set timeList [list]
+    foreach div {86400 3600 60 1} mod {0 24 60 60} name {day hr min sec} {
+        set n [expr {$int_time / $div}]
+        if {$mod > 0} {set n [expr {$n % $mod}]}
+        if {$n > 1} {
+            lappend timeList "$n ${name}s"
+        } elseif {$n == 1} {
+            lappend timeList "$n $name"
+        }
+    }
+    return [join $timeList]
+}
 proc ::TSM::FCT::DICT-2-PRETTY-JSON value {
     # Guess the type of the value; deep *UNSUPPORTED* magic!
     regexp {^value is a (.*?) with a refcount} [::tcl::unsupported::representation ${value}] -> type
@@ -176,6 +189,7 @@ proc ::TSM::FCT::Git-Get-Default-Branch { GITURL } {
 }
 proc ::TSM::FCT::File-Read-JSon2Dict { FILENAME } {
     set FILE_DATA   [File-Read ${FILENAME}]
+    if { ${FILE_DATA} == "-1" } { return -1 }
     if { [catch {
                     ::TSM::JSon::Valid ${FILENAME} ${FILE_DATA}
     } ERROR_MSG] } { 
@@ -206,6 +220,7 @@ proc ::TSM::FCT::File-Write {path content {binary 0} {right "w"}} {
 }
 
 proc ::TSM::FCT::File-Read { FILENAME } {
+    if { ![file exists $FILENAME] } { return -1 }
     set FILE_PIPE [open ${FILENAME} r]
     set FILE_DATA [read ${FILE_PIPE}]
     close ${FILE_PIPE}
@@ -332,20 +347,43 @@ proc ::TSM::FCT::CONFIG-GET { key {subkey ""} {default NONE} } {
     variable ::TSM::CONFIG
     return [VALUE-GET ${CONFIG(DATA)} ${key} ${subkey} ${default}]
 }
+proc ::TSM::FCT::DB-GET { cat key {subkey ""} {default NONE} } {
+    variable ::TSM::SCRIPTS
+    variable ::TSM::DBSource
+    set DB  [VALUE-GET ${DBSource} ${cat}]
+    return [VALUE-GET ${DB} ${key} ${subkey} ${default}]
+}
 
 #########
 namespace eval ::TSM::Show {
-
+    namespace import -force ::TSM::FCT::*
 }
 proc ::TSM::Show::Banner {} {
     puts "  _____ ___ __  __ \n |_   _/ __|  \\/  |\n   | | \\__ \\ |\\/| |\n   |_| |___/_|  |_|\n\n-TCL-SCRIPT-MANAGER-"
 }
+
 proc ::TSM::Show::Informations {} {
+    variable ::TSM::DBSource
     variable ::TSM::SOURCE
-    puts "Eggdrop    : ${::TSM::EGGDROP_VERSION} (${::TSM::INSTALLDIR})"
+    variable ::TSM::SCRIPTS
+    set DBSource        [File-Read-JSon2Dict ${SCRIPTS(DB)}]
+    if { ${DBSource} == "-1 " } {
+        set DB_TEXT         "[string map [list [pwd] "."] ${SCRIPTS(DB)}]: NEVER UPDATED -> Run ${::argv0} UpdateDB"
+        ::TSM::Show::Error "DB never updated! Run '${::argv0} UpdateDB ' before." [expr {[string match -nocase "UpdateDB" $::argv] ? 0 : 2}]
+    } else {
+        set DB_TIME_UNIX    [DB-GET DB Update At]
+        set DB_TIME_DATE    [clock format ${DB_TIME_UNIX} -format "%m-%d-%Y" -gmt 1]
+        set DB_TIME_AGO     [expr {[clock seconds]-${DB_TIME_UNIX}}]
+        set DB_SCRIPT_CNT   [DB-GET DB Script Count]
+        set DB_SOURCE_CNT   [DB-GET DB Source Count]
+        set DB_TEXT         "[string map [list [pwd] "."] ${SCRIPTS(DB)}]: ${DB_TIME_DATE} ([duration ${DB_TIME_AGO}] ago) with ${DB_SCRIPT_CNT} scripts from ${DB_SOURCE_CNT} sources"
+    }
+    set DBSource ""
+
+    puts "InstallDir : ${::TSM::INSTALLDIR}"
+    puts "Eggdrop    : ${::TSM::EGGDROP_VERSION}"
     puts "TCL        : ${::TSM::TCL_VERSION}"
-    puts "DB         : DATE (PATH) with X scripts from X sources"
-    #puts "SCRIPTS DB : ${SOURCE(SCRIPT_NUMBER)}"
+    puts "DB         : ${DB_TEXT}"
     puts "--------------------\n"
 }
 proc ::TSM::Show::Help {} {
@@ -467,7 +505,6 @@ proc ::TSM::List::Get:Informations { LIST_DATA SOURCE_URI } {
             if { [::TSM::FCT::Git-Validator ${SCRIPT_GITURL} ${SCRIPT_GITREVISION}] != 1 } {
                 ::TSM::Show::Error "Source list '${LIST_NAME}' have bad source URI/REVISION for '${SCRIPT_NAME}' ( ${SCRIPT_GITURL} / ${SCRIPT_GITREVISION} )";
                 continue
-
             }
             set SCRIPT_COMMIT_VERSION   [Git-COMMIT-VERSION ${SCRIPT_GITURL} ${SCRIPT_GITREVISION}]
             incr SOURCE(SCRIPT_NUMBER)
@@ -622,6 +659,9 @@ proc ::TSM::COMMANDS::UpdateDB {} {
     }
     puts "--------------------"
     puts "Total lists '${SOURCE(LIST_NUMBER)}' with scripts: '${SOURCE(SCRIPT_NUMBER)}'"
+    dict set DBSource DB Update At      [clock seconds]
+    dict set DBSource DB Source Count   ${SOURCE(LIST_NUMBER)}
+    dict set DBSource DB Script Count   ${SOURCE(SCRIPT_NUMBER)}
     File-Write ${SCRIPTS(DB)} [DICT-2-PRETTY-JSON ${DBSource}] 1 w
 }
 
