@@ -196,9 +196,9 @@ TCL        : 8.6
            CATEGORY           : Services
          DESCRIPTION          : Check Proxxy on connect
             AUTHOR            : ZarTek
-           GIT URL            : https://github.com/ZarTek/TCL-PROXYCHECK
+           GIT URL            : https://github.com/ZarTek-Creole/TCL-PROXYCHECK
          GIT REVISION         : main
-       TROUBLESHOOTING        : https://github.com/ZarTek/TCL-PROXYCHECK/issues/new
+       TROUBLESHOOTING        : https://github.com/ZarTek-Creole/TCL-PROXYCHECK/issues/new
  Minimum version for Eggdrop  : null
    Minimum version for TCL    : null
 
@@ -214,7 +214,7 @@ TCL        : 8.6
 
 ****** post-installation INFORMATIONS ******
 
-      Read instruction on: https://github.com/ZarTek/TCL-PROXYCHECK/blob/main/README.md
+      Read instruction on: https://github.com/ZarTek-Creole/TCL-PROXYCHECK/blob/main/README.md
 
 *********************************
 
@@ -246,9 +246,9 @@ TCL        : 8.6
            CATEGORY           : Services
          DESCRIPTION          : Trade show animation, Network help, User profile
             AUTHOR            : ZarTek
-           GIT URL            : https://github.com/ZarTek/TCL-ClaraServ
+           GIT URL            : https://github.com/ZarTek-Creole/TCL-ClaraServ
          GIT REVISION         : main
-       TROUBLESHOOTING        : https://github.com/ZarTek/TCL-ClaraServ/issues/new
+       TROUBLESHOOTING        : https://github.com/ZarTek-Creole/TCL-ClaraServ/issues/new
  Minimum version for Eggdrop  : null
    Minimum version for TCL    : null
 
@@ -258,7 +258,7 @@ TCL        : 8.6
 
 ****** post-installation INFORMATIONS ******
 
-      Read instruction on: https://github.com/ZarTek/TCL-ClaraServ/blob/main/README.md
+      Read instruction on: https://github.com/ZarTek-Creole/TCL-ClaraServ/blob/main/README.md
 
 *********************************
 ```
