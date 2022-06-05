@@ -30,19 +30,19 @@ Il est basé sur un système de "sources listes" contenant des catalogues de scr
 
 ### Donation
 
-<https://github.com/ZarTek-Creole/DONATE>
+<github.com/ZarTek-Creole/DONATE>
 
 ### Website
 
-<https://github.com/ZarTek-Creole/TCL-SCRIPT-MANAGER>
+<github.com/ZarTek-Creole/TCL-SCRIPT-MANAGER>
 
 ### Support
 
-<https://github.com/ZarTek-Creole/TCL-SCRIPT-MANAGER/issues>
+<github.com/ZarTek-Creole/TCL-SCRIPT-MANAGER/issues>
 
 ### Docs
 
-<https://github.com/ZarTek-Creole/TCL-SCRIPT-MANAGER/wiki>
+<github.com/ZarTek-Creole/TCL-SCRIPT-MANAGER/wiki>
 
 ## Usage Example
 
@@ -83,7 +83,7 @@ Eggdrop    : 1.9.1 (/home/eggdrop/scripts)
 TCL        : 8.6
 --------------------
 Checking script repository from '/home/eggdrop/sources.list'... Please be patient, it may take a while ...
-Informations list: 'ZarTek public Scripts List' by 'https://github.com/ZarTek-Creole' with '11' scripts Last update: 'Mon, 04 Oct 2021 15:21:19 GMT'
+Informations list: 'ZarTek public Scripts List' by 'github.com/ZarTek-Creole' with '11' scripts Last update: 'Mon, 04 Oct 2021 15:21:19 GMT'
 --------------------
 Total lists '1' withs scripts: '11'
 ```
@@ -186,7 +186,7 @@ TCL        : 8.6
 
              NAME             : ZarTek public Scripts List
              DATE             : Mon, 04 Oct 2021 15:21:19 GMT
-           CONTACT            : https://github.com/ZarTek
+           CONTACT            : github.com/ZarTek-Creole
 
 ****** SCRIPT INFORMATIONS ******
 
@@ -196,9 +196,9 @@ TCL        : 8.6
            CATEGORY           : Services
          DESCRIPTION          : Check Proxxy on connect
             AUTHOR            : ZarTek
-           GIT URL            : https://github.com/ZarTek-Creole/TCL-PROXYCHECK
+           GIT URL            : github.com/ZarTek-Creole/TCL-PROXYCHECK
          GIT REVISION         : main
-       TROUBLESHOOTING        : https://github.com/ZarTek-Creole/TCL-PROXYCHECK/issues/new
+       TROUBLESHOOTING        : github.com/ZarTek-Creole/TCL-PROXYCHECK/issues/new
  Minimum version for Eggdrop  : null
    Minimum version for TCL    : null
 
@@ -214,7 +214,7 @@ TCL        : 8.6
 
 ****** post-installation INFORMATIONS ******
 
-      Read instruction on: https://github.com/ZarTek-Creole/TCL-PROXYCHECK/blob/main/README.md
+      Read instruction on: github.com/ZarTek-Creole/TCL-PROXYCHECK/blob/main/README.md
 
 *********************************
 
@@ -236,7 +236,7 @@ TCL        : 8.6
 
              NAME             : ZarTek public Scripts List
              DATE             : Mon, 04 Oct 2021 15:21:19 GMT
-           CONTACT            : https://github.com/ZarTek
+           CONTACT            : github.com/ZarTek-Creole
 
 ****** SCRIPT INFORMATIONS ******
 
@@ -246,9 +246,9 @@ TCL        : 8.6
            CATEGORY           : Services
          DESCRIPTION          : Trade show animation, Network help, User profile
             AUTHOR            : ZarTek
-           GIT URL            : https://github.com/ZarTek-Creole/TCL-ClaraServ
+           GIT URL            : github.com/ZarTek-Creole/TCL-ClaraServ
          GIT REVISION         : main
-       TROUBLESHOOTING        : https://github.com/ZarTek-Creole/TCL-ClaraServ/issues/new
+       TROUBLESHOOTING        : github.com/ZarTek-Creole/TCL-ClaraServ/issues/new
  Minimum version for Eggdrop  : null
    Minimum version for TCL    : null
 
@@ -258,7 +258,7 @@ TCL        : 8.6
 
 ****** post-installation INFORMATIONS ******
 
-      Read instruction on: https://github.com/ZarTek-Creole/TCL-ClaraServ/blob/main/README.md
+      Read instruction on: github.com/ZarTek-Creole/TCL-ClaraServ/blob/main/README.md
 
 *********************************
 ```

@@ -2,7 +2,7 @@
   "list": {
     "updateat": "Wed, 20 Oct 2021 21:49:01 GMT",
     "name": "ZarTek public Scripts List",
-    "contact": "https://github.com/ZarTek-Creole"
+    "contact": "github.com/ZarTek-Creole"
   },
   "scripts": [
     {
@@ -28,8 +28,8 @@
       "description": "Mircryption (FiSH) for eggdrop.",
       "version": "1.00.30",
       "author": "WtF",
-      "documentation": "https://github.com/ZarTek-Creole/mceggdrop/blob/master/ImportantReadme.txt",
-      "giturl": "https://github.com/ZarTek-Creole/mceggdrop",
+      "documentation": "github.com/ZarTek-Creole/mceggdrop/blob/master/ImportantReadme.txt",
+      "giturl": "github.com/ZarTek-Creole/mceggdrop",
       "gitrevision": "master",
       "troubleshooting": "In case of problems, contact http://www.donationcoder.com/Software/Mouser/mircryption/others_eggdrop.php",
       "mineggdropversion": "1.8.4",
@@ -52,10 +52,10 @@
       "description": "This script retrieves information about Youtube titles using Youtube API V3.",
       "version": "2.6.2",
       "author": "ZarTek",
-      "documentation": "https://github.com/ZarTek-Creole/TCL-Youtube-Link/wiki",
-      "giturl": "https://github.com/ZarTek-Creole/TCL-Youtube-Link",
+      "documentation": "github.com/ZarTek-Creole/TCL-Youtube-Link/wiki",
+      "giturl": "github.com/ZarTek-Creole/TCL-Youtube-Link",
       "gitrevision": "main",
-      "troubleshooting": "https://github.com/ZarTek-Creole/TCL-Youtube-Link/issues/new",
+      "troubleshooting": "github.com/ZarTek-Creole/TCL-Youtube-Link/issues/new",
       "mineggdropversion": "1.6.20",
       "mintclversion": "8.5",
       "packagesrequire": {
@@ -65,7 +65,7 @@
         "clock::iso8601": "0.1"
       },
       "postinstalltext": [
-        "Read instruction on: https://github.com/ZarTek-Creole/TCL-Youtube-Link/blob/main/README.md"
+        "Read instruction on: github.com/ZarTek-Creole/TCL-Youtube-Link/blob/main/README.md"
       ]
     },
     {
@@ -74,10 +74,10 @@
       "description": "Check Proxxy on connect",
       "version": "1.1.20210521",
       "author": "ZarTek",
-      "documentation": "https://github.com/ZarTek-Creole/TCL-PROXYCHECK/wiki",
-      "giturl": "https://github.com/ZarTek-Creole/TCL-PROXYCHECK",
+      "documentation": "github.com/ZarTek-Creole/TCL-PROXYCHECK/wiki",
+      "giturl": "github.com/ZarTek-Creole/TCL-PROXYCHECK",
       "gitrevision": "main",
-      "troubleshooting": "https://github.com/ZarTek-Creole/TCL-PROXYCHECK/issues/new",
+      "troubleshooting": "github.com/ZarTek-Creole/TCL-PROXYCHECK/issues/new",
       "mineggdropversion": null,
       "mintclversion": null,
       "packagesrequire": {
@@ -90,7 +90,7 @@
         "tls": null
       },
       "postinstalltext": [
-        "Read instruction on: https://github.com/ZarTek-Creole/TCL-PROXYCHECK/blob/main/README.md"
+        "Read instruction on: github.com/ZarTek-Creole/TCL-PROXYCHECK/blob/main/README.md"
       ]
     },
     {
@@ -99,15 +99,15 @@
       "description": "Services IRC Eva",
       "version": "1.5RC",
       "author": "ZarTek",
-      "documentation": "https://github.com/ZarTek-Creole/TCL-EvaServ/wiki",
-      "giturl": "https://github.com/ZarTek-Creole/TCL-EvaServ",
+      "documentation": "github.com/ZarTek-Creole/TCL-EvaServ/wiki",
+      "giturl": "github.com/ZarTek-Creole/TCL-EvaServ",
       "gitrevision": "main",
-      "troubleshooting": "https://github.com/ZarTek-Creole/TCL-EvaServ/issues/new",
+      "troubleshooting": "github.com/ZarTek-Creole/TCL-EvaServ/issues/new",
       "mineggdropversion": null,
       "mintclversion": null,
       "packagesrequire": {},
       "postinstalltext": [
-        "Read instruction on: https://github.com/ZarTek-Creole/TCL-EvaServ/blob/main/README.md"
+        "Read instruction on: github.com/ZarTek-Creole/TCL-EvaServ/blob/main/README.md"
       ]
     },
     {
@@ -116,10 +116,10 @@
       "description": "That uses Dictionary v2 API to find and get word definitions",
       "version": "1.2.4",
       "author": "ZarTek",
-      "documentation": "https://github.com/ZarTek-Creole/TCL-DictionaryAPI/wiki",
-      "giturl": "https://github.com/ZarTek-Creole/TCL-DictionaryAPI",
+      "documentation": "github.com/ZarTek-Creole/TCL-DictionaryAPI/wiki",
+      "giturl": "github.com/ZarTek-Creole/TCL-DictionaryAPI",
       "gitrevision": "master",
-      "troubleshooting": "https://github.com/ZarTek-Creole/TCL-DictionaryAPI/issues/new",
+      "troubleshooting": "github.com/ZarTek-Creole/TCL-DictionaryAPI/issues/new",
       "mineggdropversion": "1.6.20",
       "mintclversion": "8.5",
       "packagesrequire": {
@@ -128,7 +128,7 @@
         "json": "1.3"
       },
       "postinstalltext": [
-        "Read instruction on: https://github.com/ZarTek-Creole/TCL-DictionaryAPI/blob/main/README.md"
+        "Read instruction on: github.com/ZarTek-Creole/TCL-DictionaryAPI/blob/main/README.md"
       ]
     },
     {
@@ -137,10 +137,10 @@
       "description": "Create an interface in TCL and the connection of a Service to an IRCD (like anope)",
       "version": "0.0.4",
       "author": "ZarTek",
-      "documentation": "https://github.com/ZarTek-Creole/TCL-PKG-IRCServices/wiki",
-      "giturl": "https://github.com/ZarTek-Creole/TCL-PKG-IRCServices",
+      "documentation": "github.com/ZarTek-Creole/TCL-PKG-IRCServices/wiki",
+      "giturl": "github.com/ZarTek-Creole/TCL-PKG-IRCServices",
       "gitrevision": "main",
-      "troubleshooting": "https://github.com/ZarTek-Creole/TCL-PKG-IRCServices/issues/new",
+      "troubleshooting": "github.com/ZarTek-Creole/TCL-PKG-IRCServices/issues/new",
       "mineggdropversion": "1.6.20",
       "mintclversion": "8.6",
       "packagesrequire": {
@@ -148,7 +148,7 @@
         "logger": null
       },
       "postinstalltext": [
-        "Read instruction on: https://github.com/ZarTek-Creole/TCL-PKG-IRCServices/blob/main/README.md"
+        "Read instruction on: github.com/ZarTek-Creole/TCL-PKG-IRCServices/blob/main/README.md"
       ]
     },
     {
@@ -157,17 +157,17 @@
       "description": "Trade show animation, Network help, User profile",
       "version": "1.1.20210404",
       "author": "ZarTek",
-      "documentation": "https://github.com/ZarTek-Creole/TCL-ClaraServ/wiki",
-      "giturl": "https://github.com/ZarTek-Creole/TCL-ClaraServ",
+      "documentation": "github.com/ZarTek-Creole/TCL-ClaraServ/wiki",
+      "giturl": "github.com/ZarTek-Creole/TCL-ClaraServ",
       "gitrevision": "main",
-      "troubleshooting": "https://github.com/ZarTek-Creole/TCL-ClaraServ/issues/new",
+      "troubleshooting": "github.com/ZarTek-Creole/TCL-ClaraServ/issues/new",
       "mineggdropversion": null,
       "mintclversion": null,
       "packagesrequire": {
         "IRCServices": "0.0.1"
       },
       "postinstalltext": [
-        "Read instruction on: https://github.com/ZarTek-Creole/TCL-ClaraServ/blob/main/README.md"
+        "Read instruction on: github.com/ZarTek-Creole/TCL-ClaraServ/blob/main/README.md"
       ]
     },
     {
@@ -176,15 +176,15 @@
       "description": "Manage 'My Own soCKs Server' with eggdrop bot ( https://sourceforge.net/projects/mocks/ )",
       "version": "1.0",
       "author": "ZarTek",
-      "documentation": "https://github.com/ZarTek-Creole/TCL-MOCKS/wiki",
-      "giturl": "https://github.com/ZarTek-Creole/TCL-MOCKS",
+      "documentation": "github.com/ZarTek-Creole/TCL-MOCKS/wiki",
+      "giturl": "github.com/ZarTek-Creole/TCL-MOCKS",
       "gitrevision": "master",
-      "troubleshooting": "https://github.com/ZarTek-Creole/TCL-MOCKS/issues/new",
+      "troubleshooting": "github.com/ZarTek-Creole/TCL-MOCKS/issues/new",
       "mineggdropversion": null,
       "mintclversion": null,
       "packagesrequire": {},
       "postinstalltext": [
-        "Read instruction on: https://github.com/ZarTek-Creole/TCL-MOCKS/blob/main/README.md"
+        "Read instruction on: github.com/ZarTek-Creole/TCL-MOCKS/blob/main/README.md"
       ]
     },
     {
@@ -193,15 +193,15 @@
       "description": "This script allows created false user responses to Eggdrop to WHO / WHOX commands",
       "version": "1.0",
       "author": "ZarTek",
-      "documentation": "https://github.com/ZarTek-Creole/TCL-BYPASS-WHO-BLOCKED/wiki",
-      "giturl": "https://github.com/ZarTek-Creole/TCL-BYPASS-WHO-BLOCKED",
+      "documentation": "github.com/ZarTek-Creole/TCL-BYPASS-WHO-BLOCKED/wiki",
+      "giturl": "github.com/ZarTek-Creole/TCL-BYPASS-WHO-BLOCKED",
       "gitrevision": "master",
-      "troubleshooting": "https://github.com/ZarTek-Creole/TCL-BYPASS-WHO-BLOCKED/issues/new",
+      "troubleshooting": "github.com/ZarTek-Creole/TCL-BYPASS-WHO-BLOCKED/issues/new",
       "mineggdropversion": "1.6.20",
       "mintclversion": "8.5",
       "packagesrequire": {},
       "postinstalltext": [
-        "Read instruction on: https://github.com/ZarTek-Creole/TCL-BYPASS-WHO-BLOCKED/blob/main/README.md"
+        "Read instruction on: github.com/ZarTek-Creole/TCL-BYPASS-WHO-BLOCKED/blob/main/README.md"
       ]
     },
     {
@@ -210,10 +210,10 @@
       "description": "cbFTPtcl client implementation for Tcl.",
       "version": "0.1",
       "author": "ZarTek",
-      "documentation": "https://github.com/ZarTek-Creole/TCL-PKG-cbFTPtcl/wiki",
-      "giturl": "https://github.com/ZarTek-Creole/TCL-PKG-cbFTPtcl",
+      "documentation": "github.com/ZarTek-Creole/TCL-PKG-cbFTPtcl/wiki",
+      "giturl": "github.com/ZarTek-Creole/TCL-PKG-cbFTPtcl",
       "gitrevision": "master",
-      "troubleshooting": "https://github.com/ZarTek-Creole/TCL-PKG-cbFTPtcl/issues/new",
+      "troubleshooting": "github.com/ZarTek-Creole/TCL-PKG-cbFTPtcl/issues/new",
       "mineggdropversion": "1.6.20",
       "mintclversion": "8.6",
       "packagesrequire": {
@@ -225,7 +225,7 @@
         "json::write": "1.0.3"
       },
       "postinstalltext": [
-        "Read instruction on: https://github.com/ZarTek-Creole/TCL-PKG-cbFTPtcl/blob/main/README.md"
+        "Read instruction on: github.com/ZarTek-Creole/TCL-PKG-cbFTPtcl/blob/main/README.md"
       ]
     }
   ]
