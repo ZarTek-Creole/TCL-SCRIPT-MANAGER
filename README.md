@@ -1,25 +1,8 @@
-[<span class="badge-opencollective"><a href="https://github.com/ZarTek-Creole/DONATE" title="Donate to this project"><img src="https://img.shields.io/badge/open%20collective-donate-yellow.svg" alt="Open Collective donate button" /></a></span>
-[![CC BY 4.0][cc-by-shield]][cc-by]
-
-[cc-by]: http://creativecommons.org/licenses/by/4.0/
-[cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
+<span class="badge-opencollective"><a href="https://github.com/ZarTek-Creole/DONATE" title="Donate to this project"><img src="https://img.shields.io/badge/open%20collective-donate-yellow.svg" alt="Open Collective donate button" /></a></span>
 [![CC BY 4.0][cc-by-shield]][cc-by]
-This work is licensed under a [Creative Commons Attribution 4.0 International License][cc-by].
-[![CC BY 4.0][cc-by-image]][cc-by]
+
 [cc-by]: http://creativecommons.org/licenses/by/4.0/
-[cc-by-image]: https://i.creativecommons.org/l/by/4.0/88x31.png
 [cc-by-shield]: https://img.shields.io/badge/License-CC%20BY%204.0-lightgrey.svg
-
- <span class="badge-opencollective"><a href="https://github.com/ZarTek-Creole/DONATE" title="Donate to this project"><img src="https://img.shields.io/badge/open%20collective-donate-yellow.svg" alt="Open Collective donate button" /></a></span>
-# TSM (TCL-SCRIPT-MANAGER)
-
-## ENglish
-
-TSM (TCL-SCRIPT-MANAGER) is a terminal TCL script manager that allows you to easily install, update and uninstall TCL scripts.
-It is based on a system of "source lists" containing catalogs of customizable scripts (on git), like a kind of APT for TCL Eggdrop script.
-
-## FRançais
-
 TSM (TCL-SCRIPT-MANAGER) est un gestionnaire de scripts TCL en terminal qui vous permet d'installer, de mettre à jour et de désinstaller facilement des scripts TCL.
 Il est basé sur un système de "sources listes" contenant des catalogues de scripts (sur git) personnalisables, comme un genre de APT pour script TCL Eggdrop.
 
